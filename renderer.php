@@ -42,6 +42,6 @@ class qtype_cloud_renderer extends qtype_renderer {
     }
 
     public function formulation_heading() {
-        return get_string('informationtext', 'qtype_cloud');
+        return get_string('header', 'qtype_cloud');
     }
 }

@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['informationtext'] = 'Information text';
+$string['header'] = 'Cloud Walkthrough';
 $string['pluginname'] = 'Cloud';
 $string['pluginname_help'] = 'A cloud type is not really a question. It provides a way for someone to give a user access information to a virtual server and give them a related walk through section.';
 $string['pluginnameadding'] = 'Adding a Cloud';
