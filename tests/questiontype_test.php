@@ -15,11 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for the description question type class.
+ * Unit tests for the cloud question type class.
  *
  * @package    qtype
- * @subpackage description
- * @copyright  2010 The Open University
+ * @subpackage cloud
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -27,20 +27,20 @@
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
-require_once($CFG->dirroot . '/question/type/description/questiontype.php');
+require_once($CFG->dirroot . '/question/type/cloud/questiontype.php');
 
 
 /**
- * Unit tests for the description question type class.
+ * Unit tests for the cloud question type class.
  *
- * @copyright  2010 The Open University
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qtype_description_test extends advanced_testcase {
+class qtype_cloud_test extends advanced_testcase {
     protected $qtype;
 
     protected function setUp() {
-        $this->qtype = new qtype_description();
+        $this->qtype = new qtype_cloud();
     }
 
     protected function tearDown() {
@@ -48,7 +48,7 @@ class qtype_description_test extends advanced_testcase {
     }
 
     public function test_name() {
-        $this->assertEquals($this->qtype->name(), 'description');
+        $this->assertEquals($this->qtype->name(), 'cloud');
     }
 
     public function test_actual_number_of_questions() {

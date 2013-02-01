@@ -15,17 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information for the description 'question' type.
+ * Version information for the cloud 'question' type.
  *
  * @package    qtype
- * @subpackage description
- * @copyright  2011 The Open University
+ * @subpackage cloud
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'qtype_description';
+$plugin->component = 'qtype_cloud';
 $plugin->version   = 2012112900;
 
 $plugin->requires  = 2012112900;

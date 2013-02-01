@@ -15,11 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Upgrade library code for the description question type.
+ * Upgrade library code for the cloud question type.
  *
  * @package    qtype
  * @subpackage description
- * @copyright  2010 The Open University
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -33,10 +33,10 @@ defined('MOODLE_INTERNAL') || die();
  *
  * This class is used by the code in question/engine/upgrade/upgradelib.php.
  *
- * @copyright  2010 The Open University
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qtype_description_qe2_attempt_updater extends question_qtype_attempt_updater {
+class qtype_cloud_qe2_attempt_updater extends question_qtype_attempt_updater {
     public function right_answer() {
         return '';
     }

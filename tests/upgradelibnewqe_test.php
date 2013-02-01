@@ -16,11 +16,11 @@
 
 /**
  * Tests of the upgrade to the new Moodle question engine for attempts at
- * description questions.
+ * cloud questions.
  *
  * @package    qtype
- * @subpackage description
- * @copyright  2009 The Open University
+ * @subpackage cloud
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -32,14 +32,14 @@ require_once($CFG->dirroot . '/question/engine/upgrade/tests/helper.php');
 
 
 /**
- * Testing the upgrade of description question attempts.
+ * Testing the upgrade of cloud question attempts.
  *
- * @copyright  2009 The Open University
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qtype_description_attempt_upgrader_test extends question_attempt_upgrader_test_base {
+class qtype_cloud_attempt_upgrader_test extends question_attempt_upgrader_test_base {
 
-    public function test_description_deferredfeedback_history80() {
+    public function test_cloud_deferredfeedback_history80() {
         $quiz = (object) array(
             'id' => '278',
             'course' => '2950',
@@ -95,7 +95,7 @@ class qtype_description_attempt_upgrader_test extends question_attempt_upgrader_
             'questiontextformat' => '1',
             'defaultmark' => '0',
             'penalty' => '0',
-            'qtype' => 'description',
+            'qtype' => 'cloud',
             'length' => '1',
             'stamp' => 'learn.open.ac.uk+070501114616+rtsfKk',
             'version' => 'learn.open.ac.uk+070501114616+ZY94d5',
@@ -185,7 +185,7 @@ class qtype_description_attempt_upgrader_test extends question_attempt_upgrader_
         $this->compare_qas($expectedqa, $qa);
     }
 
-    public function test_description_deferredfeedback_history70() {
+    public function test_cloud_deferredfeedback_history70() {
         $quiz = (object) array(
             'id' => '442',
             'course' => '2591',
@@ -241,7 +241,7 @@ class qtype_description_attempt_upgrader_test extends question_attempt_upgrader_
             'questiontextformat' => '1',
             'defaultmark' => '0',
             'penalty' => '0',
-            'qtype' => 'description',
+            'qtype' => 'cloud',
             'length' => '0',
             'stamp' => 'learn.open.ac.uk+070808083925+qTmPpB',
             'version' => 'learn.open.ac.uk+070907143809+3ltY7I',
@@ -331,7 +331,7 @@ class qtype_description_attempt_upgrader_test extends question_attempt_upgrader_
         $this->compare_qas($expectedqa, $qa);
     }
 
-    public function test_description_deferredfeedback_history0() {
+    public function test_cloud_deferredfeedback_history0() {
         $quiz = (object) array(
             'id' => '466',
             'course' => '3464',

@@ -15,11 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Question type class for the description 'question' type.
+ * Question type class for the cloud 'question' type.
  *
  * @package    qtype
- * @subpackage description
- * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @subpackage cloud
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -30,12 +30,12 @@ require_once($CFG->libdir . '/questionlib.php');
 
 
 /**
- * The description 'question' type.
+ * The cloud 'question' type.
  *
- * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qtype_description extends question_type {
+class qtype_cloud extends question_type {
     public function is_real_question_type() {
         return false;
     }

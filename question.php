@@ -15,11 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Description 'question' definition class.
+ * Cloud 'question' definition class.
  *
  * @package    qtype
- * @subpackage description
- * @copyright  2009 The Open University
+ * @subpackage cloud
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -28,10 +28,10 @@ defined('MOODLE_INTERNAL') || die();
 
 
 /**
- * Represents a description 'question'.
+ * Represents a cloud 'question'.
  *
- * @copyright  2009 The Open University
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qtype_description_question extends question_information_item {
+class qtype_cloud_question extends question_information_item {
 }

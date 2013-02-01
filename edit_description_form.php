@@ -15,11 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Defines the editing form for the description question type.
+ * Defines the editing form for the cloud question type.
  *
  * @package    qtype
- * @subpackage description
- * @copyright  2007 Jamie Pratt
+ * @subpackage cloud
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -28,12 +28,12 @@ defined('MOODLE_INTERNAL') || die();
 
 
 /**
- * Description editing form definition.
+ * Cloud editing form definition.
  *
- * @copyright  2007 Jamie Pratt
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qtype_description_edit_form extends question_edit_form {
+class qtype_cloud_edit_form extends question_edit_form {
     /**
      * Add question-type specific form fields.
      *
@@ -47,6 +47,6 @@ class qtype_description_edit_form extends question_edit_form {
     }
 
     public function qtype() {
-        return 'description';
+        return 'cloud';
     }
 }

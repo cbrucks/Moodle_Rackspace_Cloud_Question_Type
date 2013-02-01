@@ -15,11 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Description 'question' renderer class.
+ * Cloud 'question' renderer class.
  *
  * @package    qtype
- * @subpackage description
- * @copyright  2009 The Open University
+ * @subpackage cloud
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -28,12 +28,12 @@ defined('MOODLE_INTERNAL') || die();
 
 
 /**
- * Generates the output for description 'question's.
+ * Generates the output for cloud 'question's.
  *
- * @copyright  2009 The Open University
+ * @copyright  2013 Chris Brucks
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qtype_description_renderer extends qtype_renderer {
+class qtype_cloud_renderer extends qtype_renderer {
     public function formulation_and_controls(question_attempt $qa,
             question_display_options $options) {
 
@@ -42,6 +42,6 @@ class qtype_description_renderer extends qtype_renderer {
     }
 
     public function formulation_heading() {
-        return get_string('informationtext', 'qtype_description');
+        return get_string('informationtext', 'qtype_cloud');
     }
 }
