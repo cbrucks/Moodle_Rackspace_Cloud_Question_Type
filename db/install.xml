@@ -18,10 +18,25 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
     </TABLE>
-    <TABLE NAME="question_cloud_server" COMMENT="Contains cloud server setup data" PREVIOUS="question_cloud_account">
+    <TABLE NAME="question_cloud_server" COMMENT="Contains cloud server setup data" PREVIOUS="question_cloud_account" NEXT="question_cloud_lb">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="question"/>
-        <FIELD NAME="question" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="id"/>
+        <FIELD NAME="question" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="name"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="128" NOTNULL="true" SEQUENCE="false" PREVIOUS="question" NEXT="imagename"/>
+        <FIELD NAME="imagename" TYPE="char" LENGTH="128" NOTNULL="true" SEQUENCE="false" PREVIOUS="name" NEXT="size"/>
+        <FIELD NAME="size" TYPE="int" LENGTH="2" NOTNULL="true" SEQUENCE="false" PREVIOUS="imagename"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="question_cloud_lb" COMMENT="Contains configuration settings for a load balancer." PREVIOUS="question_cloud_server">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="question"/>
+        <FIELD NAME="question" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="name"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="128" NOTNULL="true" SEQUENCE="false" PREVIOUS="question" NEXT="vip"/>
+        <FIELD NAME="vip" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false" PREVIOUS="name" NEXT="region"/>
+        <FIELD NAME="region" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false" PREVIOUS="vip"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
