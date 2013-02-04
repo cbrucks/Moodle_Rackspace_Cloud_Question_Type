@@ -35,3 +35,24 @@ $string['ca_username'] = 'Username';
 $string['ca_password'] = 'Password';
 $string['ca_api_key'] = 'API Key';
 $string['ca_image'] = 'Prebuilt Image Name';
+
+$string['lb_header'] = 'Load Balancer';
+$string['lb_name'] = 'Name';
+$string['lb_vip'] = 'Virtual IP';
+$string['lb_vip_public'] = 'Accessible on the Public Internet';
+$string['lb_vip_private'] = 'On the Private Rackspace Network';
+$string['lb_region'] = 'Region';
+$string['lb_region_dfw'] = 'Dallas (DFW)';
+$string['lb_region_ord'] = 'Chicago (ORD)';
+
+$string['serverno'] = 'Server {$a}';
+$string['srv_name'] = 'Name';
+$string['srv_image'] = 'Image Name';
+$string['srv_size'] = 'Size';
+$string['srv_size_half'] = '512MB - 20GB';
+$string['srv_size_1'] = '1GB - 40GB';
+$string['srv_size_2'] = '2GB - 80GB';
+$string['srv_size_4'] = '4GB - 160GB';
+$string['srv_size_8'] = '8GB - 320GB';
+$string['srv_size_15'] = '15GB - 620GB';
+$string['srv_size_30'] = '30GB - 1.2TB';

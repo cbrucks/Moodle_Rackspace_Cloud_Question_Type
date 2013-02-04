@@ -52,8 +52,32 @@ class qtype_cloud_edit_form extends question_edit_form {
         $mform->addElement('text', 'ca_username', get_string('ca_username', 'qtype_cloud'));
         $mform->addElement('passwordunmask', 'ca_password', get_string('ca_password', 'qtype_cloud'));
         $mform->addElement('passwordunmask', 'ca_api_key', get_string('ca_api_key', 'qtype_cloud'));
-        $mform->addElement('text', 'ca_image', get_string('ca_image', 'qtype_cloud'));
 
+        $mform->addRule('ca_username', null, 'required', null, 'client');
+        $mform->addRule('ca_password', null, 'required', null, 'client');
+        $mform->addRule('ca_api_key', null, 'required', null, 'client');
+
+        $mform->addElement('header', 'lb_header', get_string('lb_header', 'qtype_cloud'));
+        $mform->addElement('text', 'lb_name', get_string('lb_name', 'qtype_cloud'));
+        $mform->addElement('select', 'lb_vip', get_string('lb_vip', 'qtype_cloud'), array(get_string('lb_vip_public', 'qtype_cloud'), get_string('lb_vip_private', 'qtype_cloud')));
+        $mform->addElement('select', 'lb_region', get_string('lb_region', 'qtype_cloud'), array(get_string('lb_region_dfw', 'qtype_cloud'), get_string('lb_region_ord', 'qtype_cloud')));
+
+        $this->add_per_answer_fields($mform, get_string('serverno', 'qtype_cloud', '{no}'),
+                question_bank::fraction_options_full(), 1, 1);
+    }
+
+    protected function get_per_answer_fields($mform, $label, $gradeoptions,
+            &$repeatedoptions, &$answersoption) {
+        $repeated = array();
+        $repeated[] = $mform->createElement('header', 'answerhdr', $label);
+        $repeated[] = $mform->createElement('text', 'srv_name', get_string('srv_name', 'qtype_cloud'));
+        $repeated[] = $mform->createElement('text', 'srv_image', get_string('srv_image', 'qtype_cloud'));
+        $repeated[] = $mform->createElement('select', 'srv_size', get_string('srv_size', 'qtype_cloud'), array(get_string('srv_size_half', 'qtype_cloud'), get_string('srv_size_1', 'qtype_cloud'), get_string('srv_size_2', 'qtype_cloud'), get_string('srv_size_4', 'qtype_cloud'), get_string('srv_size_8', 'qtype_cloud'), get_string('srv_size_15', 'qtype_cloud'), get_string('srv_size_30', 'qtype_cloud')));
+
+        $repeatedoptions['answer']['type'] = PARAM_RAW;
+        $repeatedoptions['fraction']['default'] = 0;
+        $answersoption = 'answers';
+        return $repeated;
     }
 
     public function qtype() {
