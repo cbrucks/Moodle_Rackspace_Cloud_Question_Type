@@ -29,3 +29,9 @@ $string['pluginname_help'] = 'A cloud type is not really a question. It provides
 $string['pluginnameadding'] = 'Adding a Cloud';
 $string['pluginnameediting'] = 'Editing a Cloud';
 $string['pluginnamesummary'] = 'This is not actually a question. Instead it is a way to give a user access info for a virtual server and walk them through some tasks.';
+
+$string['ca_header'] = 'Cloud Account Information';
+$string['ca_username'] = 'Username';
+$string['ca_password'] = 'Password';
+$string['ca_api_key'] = 'API Key';
+$string['ca_image'] = 'Prebuilt Image Name';
