@@ -56,20 +56,20 @@ class qtype_cloud extends question_type {
      * but instead just assigns values already loaded to their respective form components
      * we can just list ALL of our extra options irrespective of their tables.
      */
-/*    public function extra_question_fields() {
+    public function extra_question_fields() {
         // Retain the table name at the beginning of the array for padding reasons
         // when using with "initialise_question_instance()".
-        $fields = account_fields();
+        $fields = $this->account_fields();
 
         // Append only the field names to the array.
-        $fields = array_merge($fields, array_shift(lb_fields()));
+//        $fields = array_merge($fields, array_shift($this->lb_fields()));
 
         // Append only the field names to the array.
-        $fields = array_merge($fields, array_shift(server_fields()));
+//        $fields = array_merge($fields, array_shift($this->server_fields()));
 
         return $fields;
     }
-*/
+
     public function account_fields() {
         return array('question_cloud_account', 'username', 'password', 'auth_token', 'api_key', 'api_auth_token');
     }
@@ -97,7 +97,7 @@ class qtype_cloud extends question_type {
         $this->save_generic_question_options($question, $this->lb_fields());
         $results = $this->save_generic_question_options($question, $this->server_fields(), $results);
 
-        return $results;
+//        return $results;
     }
 
     private function save_generic_question_options($question, $extraquestionfields, $repeated = FALSE,$results = NULL) {
@@ -172,6 +172,8 @@ class qtype_cloud extends question_type {
         }
 
         $results = $this->get_generic_question_options($question, $this->account_fields());
+        $results &= $this->get_generic_question_options($question, $this->lb_fields());
+//        $results $= $this->get_generic_question_options($question, $this->server_fields());
 
         return $results;
     }
@@ -186,7 +188,7 @@ class qtype_cloud extends question_type {
                     implode(', ', $extraquestionfields));
             if ($extra_data) {
                 foreach ($extraquestionfields as $field) {
-                    $question->options->$field = $extra_data->$field;
+                    $question->$field = $extra_data->$field;
                 }
             } else {
                 echo $OUTPUT->notification('Failed to load question options from the table ' .
