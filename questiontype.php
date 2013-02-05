@@ -62,10 +62,14 @@ class qtype_cloud extends question_type {
         $fields = $this->account_fields();
 
         // Append only the field names to the array.
-//        $fields = array_merge($fields, array_shift($this->lb_fields()));
+        $temp = $this->lb_fields();
+        array_shift($temp);
+        $fields = array_merge($fields, $temp);
 
         // Append only the field names to the array.
-//        $fields = array_merge($fields, array_shift($this->server_fields()));
+//        $temp = $this->server_fields();
+//        array_shift($temp);
+//        $fields = array_merge($fields, $temp);
 
         return $fields;
     }
@@ -100,7 +104,7 @@ class qtype_cloud extends question_type {
 //        return $results;
     }
 
-    private function save_generic_question_options($question, $extraquestionfields, $repeated = FALSE,$results = NULL) {
+    private function save_generic_question_options($question, $extraquestionfields, $results = NULL) {
         global $DB;
 
         if (is_array($extraquestionfields) && count($extraquestionfields)>1) {
@@ -154,6 +158,7 @@ class qtype_cloud extends question_type {
         return $results;
     }
 
+
     /**
      * Loads the question type specific options for the question.
      *
@@ -188,7 +193,7 @@ class qtype_cloud extends question_type {
                     implode(', ', $extraquestionfields));
             if ($extra_data) {
                 foreach ($extraquestionfields as $field) {
-                    $question->$field = $extra_data->$field;
+                    $question->options->$field = $extra_data->$field;
                 }
             } else {
                 echo $OUTPUT->notification('Failed to load question options from the table ' .
@@ -209,15 +214,16 @@ class qtype_cloud extends question_type {
 
         $this->delete_files($questionid, $contextid);
 
-        $account_fields = $this->account_fields();
-//        delete_generic_question_options($questionid, $account_fields);
+        $this->delete_generic_question_options($questionid, $this->account_fields());
+        $this->delete_generic_question_options($questionid, $this->lb_fields());
+        $this->delete_generic_question_options($questionid, $this->server_fields());
 
         $DB->delete_records('question_answers', array('question' => $questionid));
 
         $DB->delete_records('question_hints', array('questionid' => $questionid));
     }
 
-/*    public function delete_generic_question_options($questionid, $extraquestionfields = NULL) {
+    private function delete_generic_question_options($questionid, $extraquestionfields = NULL) {
         global $DB;
 
         if (is_array($extraquestionfields)) {
@@ -226,7 +232,7 @@ class qtype_cloud extends question_type {
                     array($this->questionid_column_name() => $questionid));
         }
     }
-*/
+
     public function actual_number_of_questions($question) {
         /// Used for the feature number-of-questions-per-page
         /// to determine the actual number of questions wrapped
