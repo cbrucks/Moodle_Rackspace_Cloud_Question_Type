@@ -91,14 +91,18 @@ class qtype_cloud extends question_type {
      *      it is not a standard question object.
      */
     public function save_question_options($question) {
+        $results = new stdClass();
+
         $this->save_generic_question_options($question, $this->account_fields());
         $this->save_generic_question_options($question, $this->lb_fields());
-        $this->save_generic_question_options($question, $this->server_fields());
+        $results = $this->save_generic_question_options($question, $this->server_fields(), $results);
+
+        return $results;
     }
 
-    private function save_generic_question_options($question, $extraquestionfields) {
+    private function save_generic_question_options($question, $extraquestionfields, $results = NULL) {
         global $DB;
-        if (is_array($extraquestionfields)) {
+        if (is_array($extraquestionfields) && count($extraquestionfields)>1) {
             $question_extension_table = array_shift($extraquestionfields);
 
             $function = 'update_record';
@@ -112,12 +116,20 @@ class qtype_cloud extends question_type {
             }
             foreach ($extraquestionfields as $field) {
                 if (property_exists($question, $field)) {
-                    $options->$field = $question->$field;
+                    $field_val = $question->$field;
+                    if (is_array($field_val)) {
+                        $results->error .= var_dump($field).var_dump($question->$field).var_dump(is_array($question->$field));
+                    }
+                    else {
+                        $options->$field = $field_val;
+                    }
                 }
             }
 
             $DB->{$function}($question_extension_table, $options);
         }
+
+        return $results;
     }
 
     /**
