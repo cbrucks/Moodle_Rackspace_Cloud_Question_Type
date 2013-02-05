@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information for the cloud 'question' type.
+ * Cloud question type upgrade code.
  *
  * @package    qtype
  * @subpackage cloud
@@ -23,11 +23,34 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'qtype_cloud';
-$plugin->version   = 2013020512;
 
-$plugin->requires  = 2012120301.05;
+/**
+ * Upgrade code for the cloud question type.
+ * @param int $oldversion the version we are upgrading from.
+ */
+function xmldb_qtype_cloud_upgrade($oldversion = 0) {
+    global $DB;
+    $dbman = $DB->get_manager();
 
-$plugin->maturity  = MATURITY_STABLE;
+    $result = true;
+
+    $newversion = 2013020512;
+
+    if ($oldversion < $newversion) {
+
+        // Changing precision of field region on table question_cloud_lb to (1)
+        $table = new xmldb_table('question_cloud_lb');
+        $field = new xmldb_field('region', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, null, 'vip');
+
+        // Launch change of precision for field region
+        $dbman->change_field_precision($table, $field);
+
+        // cloud savepoint reached
+        upgrade_plugin_savepoint(true, $newversion, 'qtype', 'cloud');
+    }
+
+    return $result;
+}

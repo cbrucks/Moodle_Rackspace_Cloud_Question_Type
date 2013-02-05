@@ -48,107 +48,145 @@ class qtype_cloud extends question_type {
         return false;
     }
 
-    public function save_question($question, $form) {
-        global $USER, $DB, $OUTPUT;
+    /**
+     * Get the extra question field names.
+     *
+     * Use as a work around for function "initialise_question_instance()".
+     * Since "initialise_question_instance()" doesn't read anything from the database
+     * but instead just assigns values already loaded to their respective form components
+     * we can just list ALL of our extra options irrespective of their tables.
+     */
+    public function extra_question_fields() {
+        // Retain the table name at the beginning of the array for padding reasons
+        // when using with "initialise_question_instance()".
+        $fields = account_fields();
 
-        list($question->category) = explode(',', $form->category);
-        $context = $this->get_context_by_category_id($question->category);
+        // Append only the field names to the array.
+        $fields = array_merge($fields, array_shift(lb_fields()));
 
-        // This default implementation is suitable for most
-        // question types.
+        // Append only the field names to the array.
+        $fields = array_merge($fields, array_shift(server_fields()));
 
-        // First, save the basic question itself
-        $question->name = trim($form->name);
-        $question->parent = isset($form->parent) ? $form->parent : 0;
-        $question->length = $this->actual_number_of_questions($question);
-        $question->penalty = 0;
-
-        if (empty($form->questiontext['text'])) {
-            $question->questiontext = '';
-        } else {
-            $question->questiontext = trim($form->questiontext['text']);;
-        }
-        $question->questiontextformat = !empty($form->questiontext['format']) ?
-                $form->questiontext['format'] : 0;
-
-        if (empty($question->name)) {
-            $question->name = shorten_text(strip_tags($form->questiontext['text']), 15);
-            if (empty($question->name)) {
-                $question->name = '-';
-            }
-        }
-
-        if (isset($form->defaultmark)) {
-            $question->defaultmark = $form->defaultmark;
-        }
-
-        $question->ca_username = $form->ca_username;
-        $question->ca_password = $form->ca_password;
-        $question->ca_api_key = $form->ca_api_key;
-
-        // If the question is new, create it.
-        if (empty($question->id)) {
-            // Set the unique code
-            $question->stamp = make_unique_id_code();
-            $question->createdby = $USER->id;
-            $question->timecreated = time();
-            $question->id = $DB->insert_record('question', $question);
-        }
-
-        // Now, whether we are updating a existing question, or creating a new
-        // one, we have to do the files processing and update the record.
-        /// Question already exists, update.
-        $question->modifiedby = $USER->id;
-        $question->timemodified = time();
-
-        if (!empty($question->questiontext) && !empty($form->questiontext['itemid'])) {
-            $question->questiontext = file_save_draft_area_files($form->questiontext['itemid'],
-                    $context->id, 'question', 'questiontext', (int)$question->id,
-                    $this->fileoptions, $question->questiontext);
-        }
-        if (!empty($question->generalfeedback) && !empty($form->generalfeedback['itemid'])) {
-            $question->generalfeedback = file_save_draft_area_files(
-                    $form->generalfeedback['itemid'], $context->id,
-                    'question', 'generalfeedback', (int)$question->id,
-                    $this->fileoptions, $question->generalfeedback);
-        }
-        $DB->update_record('question', $question);
-
-        // Now to save all the answers and type-specific options
-        $form->id = $question->id;
-        $form->qtype = $question->qtype;
-        $form->category = $question->category;
-        $form->questiontext = $question->questiontext;
-        $form->questiontextformat = $question->questiontextformat;
-        // current context
-        $form->context = $context;
-
-        $result = $this->save_question_options($form);
-
-        if (!empty($result->error)) {
-            print_error($result->error);
-        }
-
-        if (!empty($result->notice)) {
-            notice($result->notice, "question.php?id=$question->id");
-        }
-
-        if (!empty($result->noticeyesno)) {
-            throw new coding_exception(
-                    '$result->noticeyesno no longer supported in save_question.');
-        }
-
-        // Give the question a unique version stamp determined by question_hash()
-        $DB->set_field('question', 'version', question_hash($question),
-                array('id' => $question->id));
-
-        return $question;
+        return $fields;
     }
 
-    public function initialise_question_instance(question_definition $question, $questiondata) {
-//        parent::initialise_question_instance($question, $questiondata);
+    public function account_fields() {
+        return array('question_cloud_account', 'username', 'password', 'auth_token', 'api_key', 'api_auth_token');
+    }
 
-//        $question->ca_username = $questiondata->ca_username;
+    public function lb_fields() {
+        return array('question_cloud_lb', 'lb_name', 'vip', 'region');
+    }
+
+    public function server_fields() {
+        return array('question_cloud_server', 'srv_name', 'imagename', 'slicesize');
+    }
+
+    /**
+     * Saves question-type specific options
+     *
+     * This is called by {@link save_question()} to save the question-type specific data
+     * @return object $result->error or $result->noticeyesno or $result->notice
+     * @param object $question  This holds the information from the editing form,
+     *      it is not a standard question object.
+     */
+    public function save_question_options($question) {
+        $account_fields = $this->account_fields();
+        save_generic_question_options($question, $account_fields);
+    }
+
+    public function save_generic_question_options($question, $extraquestionfields = NULL) {
+        global $DB;
+        if (is_array($extraquestionfields)) {
+            $question_extension_table = array_shift($extraquestionfields);
+
+            $function = 'update_record';
+            $questionidcolname = $this->questionid_column_name();
+            $options = $DB->get_record($question_extension_table,
+                    array($questionidcolname => $question->id));
+            if (!$options) {
+                $function = 'insert_record';
+                $options = new stdClass();
+                $options->$questionidcolname = $question->id;
+            }
+            foreach ($extraquestionfields as $field) {
+                if (property_exists($question, $field)) {
+                    $options->$field = $question->$field;
+                }
+            }
+
+            $DB->{$function}($question_extension_table, $options);
+        }
+    }
+
+    /**
+     * Loads the question type specific options for the question.
+     *
+     * This function loads any question type specific options for the
+     * question from the database into the question object. This information
+     * is placed in the $question->options field. A question type is
+     * free, however, to decide on a internal structure of the options field.
+     * @return bool            Indicates success or failure.
+     * @param object $question The question object for the question. This object
+     *                         should be updated to include the question type
+     *                         specific information (it is passed by reference).
+     */
+    public function get_question_options($question) {
+        if (!isset($question->options)) {
+            $question->options = new stdClass();
+        }
+
+        $account_fields = $this->account_fields();
+        return get_generic_question_options($question, $account_fields);
+    }
+
+    public function get_generic_question_options($question, $extraquestionfields = NULL) {
+        global $CFG, $DB, $OUTPUT;
+
+        if (is_array($extraquestionfields)) {
+            $question_extension_table = array_shift($extraquestionfields);
+            $extra_data = $DB->get_record($question_extension_table,
+                    array($this->questionid_column_name() => $question->id),
+                    implode(', ', $extraquestionfields));
+            if ($extra_data) {
+                foreach ($extraquestionfields as $field) {
+                    $question->options->$field = $extra_data->$field;
+                }
+            } else {
+                echo $OUTPUT->notification('Failed to load question options from the table ' .
+                        $question_extension_table . ' for questionid ' . $question->id);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Deletes the question-type specific data when a question is deleted.
+     * @param int $question the question being deleted.
+     * @param int $contextid the context this quesiotn belongs to.
+     */
+    public function delete_question($questionid, $contextid) {
+        global $DB;
+
+        $this->delete_files($questionid, $contextid);
+
+        $account_fields = $this->account_fields();
+        delete_generic_question_options($questionid, $account_fields);
+
+        $DB->delete_records('question_answers', array('question' => $questionid));
+
+        $DB->delete_records('question_hints', array('questionid' => $questionid));
+    }
+
+    public function delete_generic_question_options($questionid, $extraquestionfields = NULL) {
+        global $DB;
+
+        if (is_array($extraquestionfields)) {
+            $question_extension_table = array_shift($extraquestionfields);
+            $DB->delete_records($question_extension_table,
+                    array($this->questionid_column_name() => $questionid));
+        }
     }
 
     public function actual_number_of_questions($question) {
