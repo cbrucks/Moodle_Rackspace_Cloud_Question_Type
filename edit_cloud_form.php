@@ -69,14 +69,14 @@ class qtype_cloud_edit_form extends question_edit_form {
     protected function get_per_answer_fields($mform, $label, $gradeoptions,
             &$repeatedoptions, &$answersoption) {
         $repeated = array();
-        $repeated[] = $mform->createElement('header', 'answerhdr', $label);
+        $repeated[] = $mform->createElement('header', 'server_header', $label);
         $repeated[] = $mform->createElement('text', 'srv_name', get_string('srv_name', 'qtype_cloud'));
         $repeated[] = $mform->createElement('text', 'imagename', get_string('srv_image', 'qtype_cloud'));
         $repeated[] = $mform->createElement('select', 'slicesize', get_string('srv_size', 'qtype_cloud'), array(get_string('srv_size_half', 'qtype_cloud'), get_string('srv_size_1', 'qtype_cloud'), get_string('srv_size_2', 'qtype_cloud'), get_string('srv_size_4', 'qtype_cloud'), get_string('srv_size_8', 'qtype_cloud'), get_string('srv_size_15', 'qtype_cloud'), get_string('srv_size_30', 'qtype_cloud')));
 
         $repeatedoptions['answer']['type'] = PARAM_RAW;
         $repeatedoptions['fraction']['default'] = 0;
-        $answersoption = 'answers';
+        $answersoption = 'answer';
         return $repeated;
     }
 

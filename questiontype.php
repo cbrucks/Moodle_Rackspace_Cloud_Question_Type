@@ -100,33 +100,55 @@ class qtype_cloud extends question_type {
         return $results;
     }
 
-    private function save_generic_question_options($question, $extraquestionfields, $results = NULL) {
+    private function save_generic_question_options($question, $extraquestionfields, $repeated = FALSE,$results = NULL) {
         global $DB;
+
         if (is_array($extraquestionfields) && count($extraquestionfields)>1) {
             $question_extension_table = array_shift($extraquestionfields);
 
-            $function = 'update_record';
             $questionidcolname = $this->questionid_column_name();
-            $options = $DB->get_record($question_extension_table,
-                    array($questionidcolname => $question->id));
-            if (!$options) {
-                $function = 'insert_record';
-                $options = new stdClass();
-                $options->$questionidcolname = $question->id;
-            }
-            foreach ($extraquestionfields as $field) {
-                if (property_exists($question, $field)) {
-                    $field_val = $question->$field;
-                    if (is_array($field_val)) {
-                        $results->error .= var_dump($field).var_dump($question->$field).var_dump(is_array($question->$field));
+
+//            $results->error .= var_dump(is_array($question->$extraquestionfields[0]));
+
+            if (is_array($question->$extraquestionfields[0])) {
+                // TODO: reuse old entries rather than delete and reinsert
+                $DB->delete_records($question_extension_table, array($questionidcolname => $question->id));
+
+                // Build and insert one entry for each entry in the array.
+                foreach (range(0, count($question->$extraquestionfields[0])-1) as $index) {
+                    $options = new stdClass();
+                    $options->$questionidcolname = $question->id;
+
+                    reset($extraquestionfields);
+                    foreach ($extraquestionfields as $field) {
+                        if (property_exists($question, $field)) {
+                            $field_array = $question->$field;
+                            $options->$field = $field_array[$index];
+                        }
                     }
-                    else {
-                        $options->$field = $field_val;
-                    }
+                    $DB->insert_record($question_extension_table, $options);
                 }
             }
+            else {
+                // TODO: reuse old entries rather than delete and reinsert (Works for single entries but needs
+                // to be adapted to delete multiple original entries and replace with a single entry.
+                $DB->delete_records($question_extension_table, array($questionidcolname => $question->id));
 
-            $DB->{$function}($question_extension_table, $options);
+//                $function = 'update_record';
+//                $options = $DB->get_record($question_extension_table,
+//                        array($questionidcolname => $question->id));
+//                if (!$options) {
+                    $function = 'insert_record';
+                    $options = new stdClass();
+                    $options->$questionidcolname = $question->id;
+//                }
+                foreach ($extraquestionfields as $field) {
+                    if (property_exists($question, $field)) {
+                        $options->$field = $question->$field;
+                    }
+                }
+                $DB->{$function}($question_extension_table, $options);
+            }
         }
 
         return $results;
@@ -154,7 +176,7 @@ class qtype_cloud extends question_type {
         return $results;
     }
 
-    private function get_generic_question_options($question, $extraquestionfields = NULL) {
+    private function get_generic_question_options($question, $extraquestionfields) {
         global $CFG, $DB, $OUTPUT;
 
         if (is_array($extraquestionfields)) {
