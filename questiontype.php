@@ -56,7 +56,7 @@ class qtype_cloud extends question_type {
      * but instead just assigns values already loaded to their respective form components
      * we can just list ALL of our extra options irrespective of their tables.
      */
-    public function extra_question_fields() {
+/*    public function extra_question_fields() {
         // Retain the table name at the beginning of the array for padding reasons
         // when using with "initialise_question_instance()".
         $fields = account_fields();
@@ -69,7 +69,7 @@ class qtype_cloud extends question_type {
 
         return $fields;
     }
-
+*/
     public function account_fields() {
         return array('question_cloud_account', 'username', 'password', 'auth_token', 'api_key', 'api_auth_token');
     }
@@ -92,10 +92,10 @@ class qtype_cloud extends question_type {
      */
     public function save_question_options($question) {
         $account_fields = $this->account_fields();
-        save_generic_question_options($question, $account_fields);
+//        save_generic_question_options($question, $account_fields);
     }
 
-    public function save_generic_question_options($question, $extraquestionfields = NULL) {
+/*    public function save_generic_question_options($question, $extraquestionfields = NULL) {
         global $DB;
         if (is_array($extraquestionfields)) {
             $question_extension_table = array_shift($extraquestionfields);
@@ -118,7 +118,7 @@ class qtype_cloud extends question_type {
             $DB->{$function}($question_extension_table, $options);
         }
     }
-
+*/
     /**
      * Loads the question type specific options for the question.
      *
@@ -137,10 +137,11 @@ class qtype_cloud extends question_type {
         }
 
         $account_fields = $this->account_fields();
-        return get_generic_question_options($question, $account_fields);
+//        return get_generic_question_options($question, $account_fields);
+        return true;
     }
 
-    public function get_generic_question_options($question, $extraquestionfields = NULL) {
+/*    public function get_generic_question_options($question, $extraquestionfields = NULL) {
         global $CFG, $DB, $OUTPUT;
 
         if (is_array($extraquestionfields)) {
@@ -160,7 +161,7 @@ class qtype_cloud extends question_type {
         }
         return true;
     }
-
+*/
     /**
      * Deletes the question-type specific data when a question is deleted.
      * @param int $question the question being deleted.
@@ -172,14 +173,14 @@ class qtype_cloud extends question_type {
         $this->delete_files($questionid, $contextid);
 
         $account_fields = $this->account_fields();
-        delete_generic_question_options($questionid, $account_fields);
+//        delete_generic_question_options($questionid, $account_fields);
 
         $DB->delete_records('question_answers', array('question' => $questionid));
 
         $DB->delete_records('question_hints', array('questionid' => $questionid));
     }
 
-    public function delete_generic_question_options($questionid, $extraquestionfields = NULL) {
+/*    public function delete_generic_question_options($questionid, $extraquestionfields = NULL) {
         global $DB;
 
         if (is_array($extraquestionfields)) {
@@ -188,7 +189,7 @@ class qtype_cloud extends question_type {
                     array($this->questionid_column_name() => $questionid));
         }
     }
-
+*/
     public function actual_number_of_questions($question) {
         /// Used for the feature number-of-questions-per-page
         /// to determine the actual number of questions wrapped
