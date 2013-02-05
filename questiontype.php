@@ -91,11 +91,12 @@ class qtype_cloud extends question_type {
      *      it is not a standard question object.
      */
     public function save_question_options($question) {
-        $account_fields = $this->account_fields();
-//        save_generic_question_options($question, $account_fields);
+        $this->save_generic_question_options($question, $this->account_fields());
+        $this->save_generic_question_options($question, $this->lb_fields());
+        $this->save_generic_question_options($question, $this->server_fields());
     }
 
-/*    public function save_generic_question_options($question, $extraquestionfields = NULL) {
+    private function save_generic_question_options($question, $extraquestionfields) {
         global $DB;
         if (is_array($extraquestionfields)) {
             $question_extension_table = array_shift($extraquestionfields);
@@ -118,7 +119,7 @@ class qtype_cloud extends question_type {
             $DB->{$function}($question_extension_table, $options);
         }
     }
-*/
+
     /**
      * Loads the question type specific options for the question.
      *
@@ -136,12 +137,12 @@ class qtype_cloud extends question_type {
             $question->options = new stdClass();
         }
 
-        $account_fields = $this->account_fields();
-//        return get_generic_question_options($question, $account_fields);
-        return true;
+        $results = $this->get_generic_question_options($question, $this->account_fields());
+
+        return $results;
     }
 
-/*    public function get_generic_question_options($question, $extraquestionfields = NULL) {
+    private function get_generic_question_options($question, $extraquestionfields = NULL) {
         global $CFG, $DB, $OUTPUT;
 
         if (is_array($extraquestionfields)) {
@@ -161,7 +162,7 @@ class qtype_cloud extends question_type {
         }
         return true;
     }
-*/
+
     /**
      * Deletes the question-type specific data when a question is deleted.
      * @param int $question the question being deleted.
