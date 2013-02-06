@@ -46,7 +46,6 @@ $string['lb_region_dfw'] = 'Dallas (DFW)';
 $string['lb_region_ord'] = 'Chicago (ORD)';
 
 $string['serverno'] = 'Server {$a}';
-$string['srv_name'] = 'Name';
 $string['srv_image'] = 'Image Name';
 $string['srv_size'] = 'Size';
 $string['srv_size_half'] = '512MB - 20GB';
@@ -56,3 +55,5 @@ $string['srv_size_4'] = '4GB - 160GB';
 $string['srv_size_8'] = '8GB - 320GB';
 $string['srv_size_15'] = '15GB - 620GB';
 $string['srv_size_30'] = '30GB - 1.2TB';
+
+$string['addmoreserverblanks'] = 'Add {no} more server blanks';

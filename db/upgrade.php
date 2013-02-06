@@ -37,16 +37,9 @@ function xmldb_qtype_cloud_upgrade($oldversion = 0) {
 
     $result = true;
 
-    $newversion = 2013020512;
+    $newversion = 2013020601;
 
     if ($oldversion < $newversion) {
-
-        // Changing precision of field region on table question_cloud_lb to (1)
-        $table = new xmldb_table('question_cloud_lb');
-        $field = new xmldb_field('region', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, null, 'vip');
-
-        // Launch change of precision for field region
-        $dbman->change_field_precision($table, $field);
 
         // cloud savepoint reached
         upgrade_plugin_savepoint(true, $newversion, 'qtype', 'cloud');
