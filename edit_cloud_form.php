@@ -74,9 +74,10 @@ class qtype_cloud_edit_form extends question_edit_form {
         $repeated[] = $mform->createElement('text', 'imagename', get_string('srv_image', 'qtype_cloud'));
         $repeated[] = $mform->createElement('select', 'slicesize', get_string('srv_size', 'qtype_cloud'), array(get_string('srv_size_half', 'qtype_cloud'), get_string('srv_size_1', 'qtype_cloud'), get_string('srv_size_2', 'qtype_cloud'), get_string('srv_size_4', 'qtype_cloud'), get_string('srv_size_8', 'qtype_cloud'), get_string('srv_size_15', 'qtype_cloud'), get_string('srv_size_30', 'qtype_cloud')));
 
+
         $repeatedoptions['answer']['type'] = PARAM_RAW;
         $repeatedoptions['fraction']['default'] = 0;
-        $answersoption = 'answers';
+        $answersoption = 'servers';
 
         return $repeated;
     }
@@ -102,6 +103,21 @@ class qtype_cloud_edit_form extends question_edit_form {
         $this->repeat_elements($repeated, $repeatsatstart, $repeatedoptions,
                 'noservers', 'addanswers', $addoptions,
                 get_string('addmoreserverblanks', 'qtype_cloud'), TRUE);
+    }
+
+    protected function data_preprocessing($question) {
+        global $CFG, $OUTPUT;
+
+        if (empty($question->options->servers)) {
+            return $question;
+        }
+
+        foreach ($question->options->servers as $key=>$server) {
+            $question->imagename[$key] = $server->imagename;
+            $question->slicesize[$key] = $server->slicesize;
+        }
+
+        return $question;
     }
 
     public function qtype() {

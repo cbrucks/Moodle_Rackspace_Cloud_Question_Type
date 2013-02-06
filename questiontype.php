@@ -97,10 +97,10 @@ class qtype_cloud extends question_type {
     public function save_question_options($question) {
         $this->save_generic_question_options($question, $this->account_fields(), array());
         $this->save_generic_question_options($question, $this->lb_fields(), array('lb_name'=>'notempty'));
-        $this->save_generic_question_options($question, $this->server_fields(), array('imagename'=>'notempty'));
+        $this->save_generic_question_options($question, $this->server_fields(), array('imagename'=>'notempty'), TRUE);
     }
 
-    private function save_generic_question_options($question, $extraquestionfields, $validity_conditions=NULL) {
+    private function save_generic_question_options($question, $extraquestionfields, $validity_conditions=NULL, $multiple_options=FALSE) {
         global $DB, $OUTPUT;
 
         if (is_array($extraquestionfields) && count($extraquestionfields)>1) {
@@ -108,17 +108,17 @@ class qtype_cloud extends question_type {
 
             $questionidcolname = $this->questionid_column_name();
 
-            if (is_array($question->$extraquestionfields[0])) {
+            if ($multiple_options) {
                 // TODO: reuse old entries rather than delete and reinsert
                 // APPROACH: count the number of entries and if there are more than we need delete the extras
                 // PROBLEMS: distinguishing between already updated entries and old entries
                 $DB->delete_records($question_extension_table, array($questionidcolname => $question->id));
 
-                echo $OUTPUT->notification(var_dump($question));
+//                echo $OUTPUT->notification(var_dump($question));
 
                 // Build and insert one entry for each entry in the array.
                 $index_correction = 0;
-                foreach (range(0, count($question->$extraquestionfields[0])-1) as $index) {
+                foreach (range(0, $question->noservers-1) as $index) {
                     $options = new stdClass();
                     $options->$questionidcolname = $question->id;
 
@@ -232,17 +232,15 @@ class qtype_cloud extends question_type {
                     implode(', ', $extraquestionfields));
 
             if ($extra_data) {
-                echo $OUTPUT->notification(var_dump($extra_data));
+//                echo $OUTPUT->notification(var_dump($extra_data));
 
                 if ($accept_multiple_records) {
-                    foreach ($extraquestionfields as $field) {
-                        $field_val_array = array();
-                        foreach ($extra_data as $extra_data_single) {
-                            $field_val_array[] = $extra_data_single->$field;
-                        }
-                        $question->options->$field = $field_val_array;
+                    $question->options->servers = array();
+                    foreach ($extra_data as $extra_data_single) {
+                        $question->options->servers[] = $extra_data_single;
                     }
-                    echo $OUTPUT->notification(var_dump($question->options));
+
+//                    echo $OUTPUT->notification(var_dump($question->options));
                 } else {
                     $extra_data = array_shift($extra_data);
                     foreach ($extraquestionfields as $field) {
@@ -250,8 +248,8 @@ class qtype_cloud extends question_type {
                     }
                 }
             } else {
-                echo $OUTPUT->notification('Failed to load question options from the table ' .
-                        $question_extension_table . ' for questionid ' . $question->id);
+//                echo $OUTPUT->notification('Failed to load question options from the table ' .
+//                        $question_extension_table . ' for questionid ' . $question->id);
                 return false;
             }
         }
