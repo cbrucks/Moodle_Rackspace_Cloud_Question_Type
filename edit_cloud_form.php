@@ -76,7 +76,7 @@ class qtype_cloud_edit_form extends question_edit_form {
 
         $repeatedoptions['answer']['type'] = PARAM_RAW;
         $repeatedoptions['fraction']['default'] = 0;
-        $answersoption = 'answer';
+        $answersoption = 'answers';
 
         return $repeated;
     }

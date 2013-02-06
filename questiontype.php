@@ -83,7 +83,7 @@ class qtype_cloud extends question_type {
     }
 
     public function server_fields() {
-        return array('question_cloud_server', 'imagename', 'slicesize');
+        return array('question_cloud_server', 'num', 'imagename', 'slicesize');
     }
 
     /**
@@ -101,7 +101,7 @@ class qtype_cloud extends question_type {
     }
 
     private function save_generic_question_options($question, $extraquestionfields, $validity_conditions=NULL) {
-        global $DB;
+        global $DB, $OUTPUT;
 
         if (is_array($extraquestionfields) && count($extraquestionfields)>1) {
             $question_extension_table = array_shift($extraquestionfields);
@@ -113,6 +113,8 @@ class qtype_cloud extends question_type {
                 // APPROACH: count the number of entries and if there are more than we need delete the extras
                 // PROBLEMS: distinguishing between already updated entries and old entries
                 $DB->delete_records($question_extension_table, array($questionidcolname => $question->id));
+
+                echo $OUTPUT->notification(var_dump($question));
 
                 // Build and insert one entry for each entry in the array.
                 $index_correction = 0;
@@ -195,7 +197,6 @@ class qtype_cloud extends question_type {
         return $results;
     }
 
-
     /**
      * Loads the question type specific options for the question.
      *
@@ -234,12 +235,19 @@ class qtype_cloud extends question_type {
                 echo $OUTPUT->notification(var_dump($extra_data));
 
                 if ($accept_multiple_records) {
-
+                    foreach ($extraquestionfields as $field) {
+                        $field_val_array = array();
+                        foreach ($extra_data as $extra_data_single) {
+                            $field_val_array[] = $extra_data_single->$field;
+                        }
+                        $question->options->$field = $field_val_array;
+                    }
+                    echo $OUTPUT->notification(var_dump($question->options));
                 } else {
-
-//                    foreach ($extraquestionfields as $field) {
-//                        $question->options->$field = $extra_data->$field;
-//                    }
+                    $extra_data = array_shift($extra_data);
+                    foreach ($extraquestionfields as $field) {
+                        $question->options->$field = $extra_data->$field;
+                    }
                 }
             } else {
                 echo $OUTPUT->notification('Failed to load question options from the table ' .
