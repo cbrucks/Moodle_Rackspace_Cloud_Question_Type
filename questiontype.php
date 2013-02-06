@@ -95,16 +95,12 @@ class qtype_cloud extends question_type {
      *      it is not a standard question object.
      */
     public function save_question_options($question) {
-        $results = new stdClass();
-
         $this->save_generic_question_options($question, $this->account_fields(), array());
         $this->save_generic_question_options($question, $this->lb_fields(), array('lb_name'=>'notempty'));
         $this->save_generic_question_options($question, $this->server_fields(), array('imagename'=>'notempty'));
-
-//        return $results;
     }
 
-    private function save_generic_question_options($question, $extraquestionfields, $validity_conditions=NULL, $results=NULL) {
+    private function save_generic_question_options($question, $extraquestionfields, $validity_conditions=NULL) {
         global $DB;
 
         if (is_array($extraquestionfields) && count($extraquestionfields)>1) {
@@ -114,6 +110,8 @@ class qtype_cloud extends question_type {
 
             if (is_array($question->$extraquestionfields[0])) {
                 // TODO: reuse old entries rather than delete and reinsert
+                // APPROACH: count the number of entries and if there are more than we need delete the extras
+                // PROBLEMS: distinguishing between already updated entries and old entries
                 $DB->delete_records($question_extension_table, array($questionidcolname => $question->id));
 
                 // Build and insert one entry for each entry in the array.
@@ -133,9 +131,12 @@ class qtype_cloud extends question_type {
 
                     // Perform checks for valid entry
                     if ($this->valid_form_entry($question_extension_table, $questionidcolname, $options, $validity_conditions)) {
+                        // Give each entry a unique id number.
                         $options->num = strval($index + 1 - $index_correction);
                         $DB->insert_record($question_extension_table, $options);
                     } else {
+                        // Increment the correction factor which is used to provide an
+                        // accurate numbering scheme in the "num" column of the database.
                         $index_correction++;
                     }
                 }
@@ -143,26 +144,36 @@ class qtype_cloud extends question_type {
             else {
                 // TODO: reuse old entries rather than delete and reinsert (Works for single entries but needs
                 // to be adapted to delete multiple original entries and replace with a single entry.
+                // APPROACH: count the number of records and if there are more than 1 then delete the extras
                 $DB->delete_records($question_extension_table, array($questionidcolname => $question->id));
 
-//                $function = 'update_record';
-//                $options = $DB->get_record($question_extension_table,
-//                        array($questionidcolname => $question->id));
-//                if (!$options) {
+                // Try to use an existing entry rather than create a new one.
+                $function = 'update_record';
+                $options = $DB->get_record($question_extension_table,
+                        array($questionidcolname => $question->id));
+                if (!$options) {
+                    // There is not an existing entry.  Initialize needed variables.
                     $function = 'insert_record';
                     $options = new stdClass();
                     $options->$questionidcolname = $question->id;
-//                }
+                }
+                // Build entry information.
                 foreach ($extraquestionfields as $field) {
                     if (property_exists($question, $field)) {
                         $options->$field = $question->$field;
                     }
                 }
-                $DB->{$function}($question_extension_table, $options);
+
+                // Perform checks for valid entry
+                if ($this->valid_form_entry($question_extension_table, $questionidcolname, $options, $validity_conditions)) {
+                    // Either update or insert the entry.
+                    $DB->{$function}($question_extension_table, $options);
+                } else {
+                    // The entry is not valid.  Delete the existing entry.
+                    $DB->delete_records($question_extension_table, array($questionidcolname => $question->id));
+                }
             }
         }
-
-        return $results;
     }
 
     private function valid_form_entry($question_extension_table, $questionidcolname, $question, $options) {
