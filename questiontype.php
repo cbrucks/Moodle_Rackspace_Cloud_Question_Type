@@ -67,9 +67,9 @@ class qtype_cloud extends question_type {
         $fields = array_merge($fields, $temp);
 
         // Append only the field names to the array.
-        $temp = $this->server_fields();
-        array_shift($temp);
-        $fields = array_merge($fields, $temp);
+//        $temp = $this->server_fields();
+//        array_shift($temp);
+//        $fields = array_merge($fields, $temp);
 
         return $fields;
     }
@@ -84,6 +84,16 @@ class qtype_cloud extends question_type {
 
     public function server_fields() {
         return array('question_cloud_server', 'num', 'imagename', 'slicesize');
+    }
+
+    protected function initialise_question_instance(question_definition $question, $questiondata) {
+        parent::initialise_question_instance($question, $questiondata);
+
+//        global $OUTPUT;
+//        echo $OUTPUT->notification(var_dump($questiondata));
+
+        $question->servers = $questiondata->options->servers;
+
     }
 
     /**
@@ -285,18 +295,18 @@ class qtype_cloud extends question_type {
         }
     }
 
-/*    public function import_from_xml($data, $question, qformat_xml $format, $extra=null) {
-        return parent::import_from_xml($data, $question, qformat_xml $format, $extra=null);
+    public function import_from_xml($data, $question, qformat_xml $format, $extra=null) {
+        return parent::import_from_xml($data, $question, $format, $extra);
 
         // TODO: modify to read in server information.
     }
 
     public function export_to_xml($question, qformat_xml $format, $extra=null) {
-        return parent::export_to_xml($question, qformat_xml $format, $extra=null);
+        return parent::export_to_xml($question, $format, $extra);
 
         // TODO: modify to save out server information.
     }
-*/
+
     public function actual_number_of_questions($question) {
         /// Used for the feature number-of-questions-per-page
         /// to determine the actual number of questions wrapped

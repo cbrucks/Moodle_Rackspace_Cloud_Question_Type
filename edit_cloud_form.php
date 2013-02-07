@@ -44,9 +44,9 @@ class qtype_cloud_edit_form extends question_edit_form {
         $mform->removeElement('defaultmark');
         $mform->addElement('hidden', 'defaultmark', 0);
         $mform->setType('defaultmark', PARAM_RAW);
-        $mform->removeElement('generalfeedback');
-        $mform->addElement('hidden', 'generalfeedback', 0);
-        $mform->setType('generalfeedback', PARAM_RAW);
+//        $mform->removeElement('generalfeedback');
+//        $mform->addElement('hidden', 'generalfeedback', 0);
+//        $mform->setType('generalfeedback', PARAM_RAW);
 
         $mform->addElement('header', 'ca_header', get_string('ca_header', 'qtype_cloud'));
         $mform->addElement('text', 'username', get_string('ca_username', 'qtype_cloud'));

@@ -36,8 +36,24 @@ defined('MOODLE_INTERNAL') || die();
 class qtype_cloud_renderer extends qtype_renderer {
     public function formulation_and_controls(question_attempt $qa,
             question_display_options $options) {
+        global $OUTPUT;
 
-//        $html = html_writer::tag('div', 
+        $question = $qa->get_question();
+        echo $OUTPUT->notification(var_dump($question->servers));
+
+        $account_username = $question->username;
+        $account_password = $question->password;
+        $account_auth_token = '';
+        $account_api_key = $question->api_key;
+        $account_api_auth_token = '';
+        foreach ($question->servers as $key=>$server) {
+            foreach ($server as $field=>$value) {
+                
+            }
+        }
+
+
+        $html = '';//html_writer::tag('div', $qa->get_question()->format_text(
 
         $html .= html_writer::tag('div', $qa->get_question()->format_questiontext($qa),
                     array('class' => 'qtext'));
