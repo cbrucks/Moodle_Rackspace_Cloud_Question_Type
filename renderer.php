@@ -120,7 +120,7 @@ class qtype_cloud_renderer extends qtype_renderer {
         $list = new stdClass();
 
         foreach ($lists as $field=>$options) {
-            $list->$field = $this->get_list($question, $server_endpoint_url . '/' . $options[0] , $ac_auth_token);
+            $list->$field = $this->get_list($server_endpoint_url . '/' . $options[0] , $ac_auth_token);
             if (!empty($list->$field->unauthorized)) {  // Token has expired
                 $response = $this->authorize($question);
 
@@ -132,7 +132,7 @@ class qtype_cloud_renderer extends qtype_renderer {
                     return $display_text;
                 }
 
-                $list->$field = $this->get_list($question, $server_endpoint_url . '/' . $options[0] , $ac_auth_token);
+                $list->$field = $this->get_list($server_endpoint_url . '/' . $options[0] , $ac_auth_token);
                 if (empty($list->$field->{$options[1]})) {
                     return '<center><font color="red">Authorization token expired.  Failed to reauthenticate.</font></center>';
                 }
@@ -180,7 +180,7 @@ class qtype_cloud_renderer extends qtype_renderer {
             $found_existing_server = FALSE;
             foreach ($list->servers->servers as $server) {
                 if ($server->name === $server_name) {
-                    if (!$found_existing_server) {
+/*                    if (!$found_existing_server) {
                         $found_existing_server = TRUE;
                         // TODO: Rebuild the server with our image and resize to our size
                         echo $OUTPUT->notification('Rebuild Server');
@@ -194,9 +194,10 @@ class qtype_cloud_renderer extends qtype_renderer {
 
                     } else {*/
                         // Delete the server
-                        $this->delete_server($ac_auth_token, $server->id);
+                        // TODO: do authorization token check if it fails
+                        var_dump($this->delete_server($question, $server_endpoint_url, 'asfdsafd'.$ac_auth_token, $server->id));
                         echo $OUTPUT->notification('Delete Server');
-                    }
+//                    }
                 }
             }
 
@@ -247,34 +248,28 @@ class qtype_cloud_renderer extends qtype_renderer {
     }
 
 
-    private function delete_server($ac_auth_token, $server_id){
-
-    }
-
-    private function get_list ($question, $url, $ac_auth_token) {
-        global $OUTPUT;
-        // Initialise the JSON request.
+    private function delete_server($question, $server_endpoint_url, $ac_auth_token, $server_id){
+        // Initialise extra header entries.
         $headers = array(
             sprintf('X-Auth-Token: %s' , $ac_auth_token),
-            'Content-Type: application/json',
-            'Accept: application/json',
             );
 
-        // Perform the cURL request
-        $curl_ch = curl_init($url);
-        curl_setopt($curl_ch, CURLINFO_HEADER_OUT, 1);  // Output message is displayed
-        curl_setopt($curl_ch, CURLOPT_RETURNTRANSFER, 1);  // Make silent
-        curl_setopt($curl_ch, CURLOPT_HTTPHEADER, $headers);  // Set headers
-        $curl_result = curl_exec($curl_ch);
-
-//        echo curl_getinfo($curl_ch, CURLINFO_HEADER_OUT);
-
-        curl_close($curl_ch);
-
-//        echo $OUTPUT->notification($curl_result);
+        $url = $server_endpoint_url . '/servers/' . $server_id;
 
         // Parse the returned json string
-        return json_decode($curl_result);
+        $this->send_json_curl_request($url, 'DELETE', '', $headers);
+
+        return '';
+    }
+
+    private function get_list ($url, $ac_auth_token) {
+        // Initialise extra header entries.
+        $headers = array(
+            sprintf('X-Auth-Token: %s' , $ac_auth_token),
+            );
+
+        // Parse the returned json string
+        return json_decode($this->send_json_curl_request($url, 'GET', '', $headers));
     }
 
     private function save_auth_token ($question, $token) {
@@ -308,8 +303,6 @@ class qtype_cloud_renderer extends qtype_renderer {
     }
 
     private function create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id) {
-        global $OUTPUT;
-
         // Initialise the account authorization token variables.
         $ac_username = $question->username;
         $ac_password = $question->password;
@@ -317,8 +310,6 @@ class qtype_cloud_renderer extends qtype_renderer {
         // Initialise the JSON request.
         $headers = array(
             sprintf('X-Auth-Token: %s', $ac_auth_token),
-            'Content-Type: application/json',
-            'Accept: application/json',
             sprintf('X-Auth-Project-Id: %d', $question->id),
             );
 
@@ -330,22 +321,7 @@ class qtype_cloud_renderer extends qtype_renderer {
         $url = implode("/", $path);
 
         // Perform the cURL request
-        $curl_ch = curl_init($url);
-        curl_setopt($curl_ch, CURLINFO_HEADER_OUT, 1);  // Output message is displayed
-        curl_setopt($curl_ch, CURLOPT_RETURNTRANSFER, 1);  // Make silent
-        curl_setopt($curl_ch, CURLOPT_CUSTOMREQUEST, 'POST');  // HTTP Post
-        curl_setopt($curl_ch, CURLOPT_HTTPHEADER, $headers);  // Set headers
-        curl_setopt($curl_ch, CURLOPT_POSTFIELDS, $json_string);  // Set data
-        $curl_result = curl_exec($curl_ch);
-
-//        echo curl_getinfo($curl_ch, CURLINFO_HEADER_OUT).'\n';
-
-        curl_close($curl_ch);
-
-        echo $OUTPUT->notification($curl_result);
-
-        // Parse the returned json string
-        return json_decode($curl_result);
+        return json_decode($this->send_json_curl_request($url, 'POST', $json_string, $headers));
     }
 
     private function authorize ($question) {
@@ -360,7 +336,7 @@ class qtype_cloud_renderer extends qtype_renderer {
         $url = "https://identity.api.rackspacecloud.com/v2.0/tokens";
 
         // Perform the cURL request
-        return $this->send_json_curl_request($url, 'POST', $json_string);
+        return json_decode($this->send_json_curl_request($url, 'POST', $json_string));
     }
 
     public function send_json_curl_request ($url, $command_type = 'GET', $json_string = '', $extra_headers = array()) {
@@ -382,7 +358,7 @@ class qtype_cloud_renderer extends qtype_renderer {
         curl_close($curl_ch);
 
         // Parse the returned json string
-        return json_decode($curl_result);
+        return $curl_result;
     }
 
     public function formulation_heading () {
