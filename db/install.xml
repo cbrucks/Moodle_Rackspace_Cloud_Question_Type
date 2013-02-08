@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="question/type/cloud/db" VERSION="20130206" COMMENT="XMLDB file for Moodle question/type/cloud"
+<XMLDB PATH="question/type/cloud/db" VERSION="20130208" COMMENT="XMLDB file for Moodle question/type/cloud"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
 >
@@ -12,7 +12,8 @@
         <FIELD NAME="password" TYPE="char" LENGTH="128" NOTNULL="true" SEQUENCE="false" PREVIOUS="username" NEXT="auth_token"/>
         <FIELD NAME="auth_token" TYPE="char" LENGTH="128" NOTNULL="false" SEQUENCE="false" PREVIOUS="password" NEXT="api_key"/>
         <FIELD NAME="api_key" TYPE="char" LENGTH="128" NOTNULL="true" SEQUENCE="false" PREVIOUS="auth_token" NEXT="api_auth_token"/>
-        <FIELD NAME="api_auth_token" TYPE="char" LENGTH="128" NOTNULL="false" SEQUENCE="false" PREVIOUS="api_key"/>
+        <FIELD NAME="api_auth_token" TYPE="char" LENGTH="128" NOTNULL="false" SEQUENCE="false" PREVIOUS="api_key" NEXT="region"/>
+        <FIELD NAME="region" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="api_auth_token"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="question"/>
@@ -37,8 +38,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="questionid"/>
         <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="lb_name"/>
         <FIELD NAME="lb_name" TYPE="char" LENGTH="128" NOTNULL="true" SEQUENCE="false" PREVIOUS="questionid" NEXT="vip"/>
-        <FIELD NAME="vip" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false" PREVIOUS="lb_name" NEXT="region"/>
-        <FIELD NAME="region" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false" PREVIOUS="vip"/>
+        <FIELD NAME="vip" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false" PREVIOUS="lb_name"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="question"/>

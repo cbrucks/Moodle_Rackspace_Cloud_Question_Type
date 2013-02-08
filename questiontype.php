@@ -75,11 +75,11 @@ class qtype_cloud extends question_type {
     }
 
     public function account_fields() {
-        return array('question_cloud_account', 'username', 'password', 'auth_token', 'api_key', 'api_auth_token');
+        return array('question_cloud_account', 'username', 'password', 'auth_token', 'api_key', 'api_auth_token', 'region');
     }
 
     public function lb_fields() {
-        return array('question_cloud_lb', 'lb_name', 'vip', 'region');
+        return array('question_cloud_lb', 'lb_name', 'vip');
     }
 
     public function server_fields() {

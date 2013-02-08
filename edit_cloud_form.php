@@ -52,6 +52,7 @@ class qtype_cloud_edit_form extends question_edit_form {
         $mform->addElement('text', 'username', get_string('ca_username', 'qtype_cloud'));
         $mform->addElement('passwordunmask', 'password', get_string('ca_password', 'qtype_cloud'));
         $mform->addElement('passwordunmask', 'api_key', get_string('ca_api_key', 'qtype_cloud'));
+        $mform->addElement('select', 'region', get_string('lb_region', 'qtype_cloud'), array(get_string('lb_region_dfw', 'qtype_cloud'), get_string('lb_region_ord', 'qtype_cloud')));
 
         $mform->addRule('username', null, 'required', null, 'client');
         $mform->addRule('password', null, 'required', null, 'client');
@@ -60,7 +61,6 @@ class qtype_cloud_edit_form extends question_edit_form {
         $mform->addElement('header', 'lb_header', get_string('lb_header', 'qtype_cloud'));
         $mform->addElement('text', 'lb_name', get_string('lb_name', 'qtype_cloud'));
         $mform->addElement('select', 'vip', get_string('lb_vip', 'qtype_cloud'), array(get_string('lb_vip_public', 'qtype_cloud'), get_string('lb_vip_private', 'qtype_cloud')));
-        $mform->addElement('select', 'region', get_string('lb_region', 'qtype_cloud'), array(get_string('lb_region_dfw', 'qtype_cloud'), get_string('lb_region_ord', 'qtype_cloud')));
 
         $this->add_per_answer_fields($mform, get_string('serverno', 'qtype_cloud', '{no}'),
                 question_bank::fraction_options_full(), 1, 1);

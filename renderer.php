@@ -34,72 +34,307 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class qtype_cloud_renderer extends qtype_renderer {
+
+    public function questionid_column_name() {
+        return 'questionid';
+    }
+
+    public function account_fields() {
+        return array('question_cloud_account', 'username', 'password', 'auth_token', 'api_key', 'api_auth_token', 'region');
+    }
+
+    public function lb_fields() {
+        return array('question_cloud_lb', 'lb_name', 'vip');
+    }
+
+    public function server_fields() {
+        return array('question_cloud_server', 'num', 'imagename', 'slicesize');
+    }
+
     public function formulation_and_controls(question_attempt $qa,
             question_display_options $options) {
         global $OUTPUT, $DB;
 
         $question = $qa->get_question();
 
-        $response = $this->authorize($question);
-
-//        echo $OUTPUT->notification(var_dump($response));
-
-        $cloud_text = '';
-        if (!empty($response->unauthorized)) {
-            $cloud_text = '<center><font color="red">Failed to authorize based on given credentials.  Contact question administrator.<br />Code: ' . $response->unauthorized->code . '<br />' . $response->unauthorized->message . '</font><br /><br /><br /> <br /></center>';
-
-        } elseif (!empty($response->access->token->id)) {
-            $ac_auth_token = $response->access->token->id;
-
-            // Save the authorization token in the database
-            // TODO: use public function to save table name and column names like in questiontype.php
-            $table = 'question_cloud_account';
-            $questionidcolname = 'questionid';
-            $function = 'update_record';
-            $db_options = $DB->get_record($table,
-                    array($questionidcolname => $question->id));
-            if (!$db_options) { // oops but, shouldn't happen given our previous authorization
-//                // There is not an existing entry.  Initialize needed variables.
-//                $function = 'insert_record';
-//                $options = new stdClass();
-//                $options->$questionidcolname = $question->id;
-            } else {
-                $db_options->auth_token = $response->access->token->id;
-                $DB->{$function}($table, $db_options);
-            }
-
-
-            // get api auth token
-            foreach ($question->servers as $key=>$server) {
-                foreach ($server as $field=>$value) {
-                    // get server region value
-                    // find end point for specified region
-                    // build json request
-                    // review json response for confirmation of server creation
-                    // print out server info
-                }
-            }
-
-            // do the same thing for cloud load balancers
-            // do the same thing for cloud databases
-
-        } else {
-            $cloud_text = '<center><font color="red">Failed to connect to host.  Contact question administrator.<br />' . var_dump($response) . '</font><br /><br /><br /> <br /></center>';
-        }
-
-
-
-        $ac_api_key = $question->api_key;
-        $ac_api_auth_token = '';
-
+        $cloud_text = $this->create_cloud_assets($question) . '<br /><br /><br /> <br />';
 
         $html = html_writer::tag('div', $qa->get_question()->format_text($cloud_text, FORMAT_HTML, $qa, 'cloud', 'accountinfo', $question->id));
 
         $html .= html_writer::tag('div', $qa->get_question()->format_questiontext($qa),
                     array('class' => 'qtext'));
 
-
         return $html;
+    }
+
+    private function create_cloud_assets($question) {
+        global $OUTPUT, $USER;
+
+        // Always call this when the question is created to help insure the token is up to date
+        // and to update the services.
+        $response = $this->authorize($question);
+
+//        echo $OUTPUT->notification(var_dump($response));
+//        echo $OUTPUT->notification(var_dump($question));
+
+        $display_text = '';
+        if (!empty($response->unauthorized)) { // Unauthorized username and password
+            return '<center><font color="red">Failed to authorize based on given credentials.  Contact question administrator.<br />Code: ' . $response->unauthorized->code . '<br />' . $response->unauthorized->message . '</font></center>';
+
+        } elseif (empty($response->access->token->id)) { // All other unwanted instances
+            return '<center><font color="red">Failed to connect to host.  Contact question administrator.<br />' . var_dump($response) . '</font></center>';
+        }
+
+        $ac_auth_token = $response->access->token->id;
+
+        $display_text = $this->save_auth_token($question, $ac_auth_token);
+        // Something went wrong accessing the account info
+        if (!empty($display_text)) {
+            return $display_text;
+        }
+
+        // get region value
+        $region = 0;
+        if (!empty($server->region)) {
+            $region = $server->region;
+        }
+
+        // find end point for specified region
+        $server_endpoint_url = '';
+        foreach ($response->access->serviceCatalog as $service) {
+            if ($service->name === 'cloudServersOpenStack') {
+                $server_endpoint_url = $service->endpoints[$region]->publicURL;
+                break;
+            }
+        }
+        // Quick validity check
+        if (empty($server_endpoint_url)) {
+            return '<center><font color="red">Failed to find server service url.</font></center>';
+        }
+
+        // Get Server List
+        $server_image_list = $this->list_server_images($question, $server_endpoint_url, $ac_auth_token);
+        if (!empty($server_image_list->unauthorized)) {  // Token has expired
+            $response = $this->authorize($question);
+
+            $ac_auth_token = $response->access->token->id;
+
+            $display_text = $this->save_auth_token($question, $ac_auth_token);
+            // Something went wrong accessing the account info
+            if (!empty($display_text)) {
+                return $display_text;
+            }
+
+            $server_image_list = $this->list_server_images($question, $server_endpoint_url, $ac_auth_token);
+            if (empty($server_image_list->images)) {
+                return '<center><font color="red">Authorization token expired.  Failed to reauthenticate.</font></center>';
+            }
+        } elseif (empty($server_image_list->images)) {  // All other unwanted instances
+            return '<center><font color="red">Failed to retrieve available server images.</font></center>';
+        }
+
+        // Get Server Flavor List
+        $server_flavor_list = $this->list_server_flavors($question, $server_endpoint_url, $ac_auth_token);
+        if (!empty($server_flavor_list->unauthorized)) {  // Token has expired
+            $response = $this->authorize($question);
+
+            $ac_auth_token = $response->access->token->id;
+
+            $display_text = $this->save_auth_token($question, $ac_auth_token);
+            // Something went wrong accessing the account info
+            if (!empty($display_text)) {
+                return $display_text;
+            }
+
+            $server_flavor_list = $this->list_server_flavors($question, $server_endpoint_url, $ac_auth_token);
+            if (empty($server_flavor_list->flavors)) {
+                return '<center><font color="red">Authorization token expired.  Failed to reauthenticate.</font></center>';
+            }
+        } elseif (empty($server_flavor_list->flavors)) {  // All other unwanted instances
+            return '<center><font color="red">Failed to retrieve available server flavors.</font></center>';
+        }
+
+
+        // Build Servers
+        foreach ($question->servers as $key=>$server) {
+            // Verify Server Image Name
+            $server_image_id = NULL;
+            $image_name = $question->servers[$key]->imagename;
+            foreach ($server_image_list->images as $image) {
+                if ($image->name === $image_name) {
+                    $server_image_id = $image->id;
+                    break;
+                }
+            }
+
+            if (empty($server_image_id)) {
+                return '<center><font color="red">Could not find server image name "'. $image_name .'" in list retreived from server</font></center>';
+            }
+
+            // Get Server Flavor
+            $server_flavor_id = $question->servers[$key]->slicesize + 2;
+
+            // Build server name.
+            $server_name = array();
+            $server_name[] = 'mdl';
+            $server_name[] = $question->id;
+            $server_name[] = '';  // $USER->username
+            $server_name[] = $question->servers[$key]->num;
+
+            $server_name[2] = substr(preg_replace('~\s+~', '_', trim($USER->username)), 0, 128-strlen(implode('_', $server_name)));
+            $server_name = implode('_', $server_name);
+
+            // Create the Server
+            $this->create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id);
+
+            // review json response for confirmation of server creation
+
+
+            // print out server info
+
+        }
+
+        // get api auth token
+        $ac_api_key = $question->api_key;
+        $ac_api_auth_token = '';
+
+        // do the same thing for cloud load balancers
+        // do the same thing for cloud databases
+
+        return $display_text;
+    }
+
+    private function list_server_flavors ($question, $server_endpoint_url, $ac_auth_token) {
+        global $OUTPUT;
+        // Initialise the JSON request.
+        $headers = array(
+            sprintf('X-Auth-Token: %s' , $ac_auth_token),
+            'Content-Type: application/json',
+            'Accept: application/json',
+            );
+
+        $path = array();
+        $path[] = $server_endpoint_url;
+        $path[] = 'flavors';
+        $url = implode("/", $path);
+
+        // Perform the cURL request
+        $curl_ch = curl_init($url);
+        curl_setopt($curl_ch, CURLINFO_HEADER_OUT, 1);  // Output message is displayed
+        curl_setopt($curl_ch, CURLOPT_RETURNTRANSFER, 1);  // Make silent
+        curl_setopt($curl_ch, CURLOPT_HTTPHEADER, $headers);  // Set headers
+        $curl_result = curl_exec($curl_ch);
+
+//        echo curl_getinfo($curl_ch, CURLINFO_HEADER_OUT);
+
+        curl_close($curl_ch);
+
+//        echo $OUTPUT->notification($curl_result);
+
+        // Parse the returned json string
+        return json_decode($curl_result);
+    }
+
+    private function list_server_images ($question, $server_endpoint_url, $ac_auth_token) {
+        global $OUTPUT;
+        // Initialise the JSON request.
+        $headers = array(
+            sprintf('X-Auth-Token: %s' , $ac_auth_token),
+            'Content-Type: application/json',
+            'Accept: application/json',
+            );
+
+        $path = array();
+        $path[] = $server_endpoint_url;
+        $path[] = 'images/detail';
+        $url = implode("/", $path);
+
+        // Perform the cURL request
+        $curl_ch = curl_init($url);
+        curl_setopt($curl_ch, CURLINFO_HEADER_OUT, 1);  // Output message is displayed
+        curl_setopt($curl_ch, CURLOPT_RETURNTRANSFER, 1);  // Make silent
+        curl_setopt($curl_ch, CURLOPT_HTTPHEADER, $headers);  // Set headers
+        $curl_result = curl_exec($curl_ch);
+
+//        echo curl_getinfo($curl_ch, CURLINFO_HEADER_OUT);
+
+        curl_close($curl_ch);
+
+//        echo $OUTPUT->notification($curl_result);
+
+        // Parse the returned json string
+        return json_decode($curl_result);
+    }
+
+    private function save_auth_token ($question, $token) {
+        global $DB;
+        $error_text = '';
+
+        // Save the authorization token in the database
+        $extratablefields = $this->account_fields();
+        $table = array_shift($extratablefields);
+        $questionidcolname = $this->questionid_column_name();
+
+        $function = 'update_record';
+        $db_options = $DB->get_record($table,
+                array($questionidcolname => $question->id));
+        if (!$db_options) { // oops but, shouldn't happen given our previous authorization unless the databse is being edited from another user
+            // There is not an existing entry.  Initialize needed variables.
+            $error_text = '<center><font color="red">Cannot acces the question information in the database. Contact question administrator.</font></center>';
+
+            // Do not fix it because it could be the admin
+/*            $function = 'insert_record';
+            $db_options = new stdClass();
+            $db_options->$questionidcolname = $question->id;
+            foreach ($extratablefields as $field) {
+                $db_options->$field = 
+            }*/
+        } else {
+            $db_options->auth_token = $token;
+            $DB->{$function}($table, $db_options);
+        }
+
+    }
+
+    private function create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id) {
+        global $OUTPUT;
+
+        // Initialise the account authorization token variables.
+        $ac_username = $question->username;
+        $ac_password = $question->password;
+
+        // Initialise the JSON request.
+        $headers = array(
+            sprintf('X-Auth-Token: %s', $ac_auth_token),
+            'Content-Type: application/json',
+            'Accept: application/json',
+            sprintf('X-Auth-Project-Id: %d', $question->id),
+            );
+
+        $json_string = sprintf('{"server":{"name":"%s", "imageRef":"%s", "flavorRef":"%d", "metadata":{"My Server Name":"%s"}}}', $server_name, $server_image_id, $server_flavor_id, $server_name);
+
+        $path = array();
+        $path[] = $server_endpoint_url;
+        $path[] = "servers";
+        $url = implode("/", $path);
+
+        // Perform the cURL request
+        $curl_ch = curl_init($url);
+        curl_setopt($curl_ch, CURLINFO_HEADER_OUT, 1);  // Output message is displayed
+        curl_setopt($curl_ch, CURLOPT_RETURNTRANSFER, 1);  // Make silent
+        curl_setopt($curl_ch, CURLOPT_CUSTOMREQUEST, 'POST');  // HTTP Post
+        curl_setopt($curl_ch, CURLOPT_HTTPHEADER, $headers);  // Set headers
+        curl_setopt($curl_ch, CURLOPT_POSTFIELDS, $json_string);  // Set data
+        $curl_result = curl_exec($curl_ch);
+
+//        echo curl_getinfo($curl_ch, CURLINFO_HEADER_OUT).'\n';
+
+        curl_close($curl_ch);
+
+        echo $OUTPUT->notification($curl_result);
+
+        // Parse the returned json string
+        return json_decode($curl_result);
     }
 
     private function authorize ($question) {
@@ -132,7 +367,7 @@ class qtype_cloud_renderer extends qtype_renderer {
         curl_setopt($curl_ch, CURLOPT_POSTFIELDS, $json_string);  // Set data
         $curl_result = curl_exec($curl_ch);
 
-        echo curl_getinfo($curl_ch, CURLINFO_HEADER_OUT).'\n';
+//        echo curl_getinfo($curl_ch, CURLINFO_HEADER_OUT).'\n';
 
         curl_close($curl_ch);
 

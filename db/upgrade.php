@@ -37,33 +37,9 @@ function xmldb_qtype_cloud_upgrade($oldversion = 0) {
 
     $result = true;
 
-    $newversion = 2013020700;
+    $newversion = 2013020800;
 
     if ($oldversion < $newversion) {
-        // Define field srv_ip to be added to question_cloud_server
-        $table = new xmldb_table('question_cloud_server');
-        $field = new xmldb_field('srv_ip', XMLDB_TYPE_CHAR, '46', null, null, null, null, 'slicesize');
-
-        // Conditionally launch add field srv_ip
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-        // Define field srv_username to be added to question_cloud_server
-        $table = new xmldb_table('question_cloud_server');
-        $field = new xmldb_field('srv_username', XMLDB_TYPE_CHAR, '128', null, null, null, null, 'srv_ip');
-
-        // Conditionally launch add field srv_username
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-        // Define field srv_password to be added to question_cloud_server
-        $table = new xmldb_table('question_cloud_server');
-        $field = new xmldb_field('srv_password', XMLDB_TYPE_CHAR, '128', null, null, null, null, 'srv_username');
-
-        // Conditionally launch add field srv_password
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
         // cloud savepoint reached
         upgrade_plugin_savepoint(true, $newversion, 'qtype', 'cloud');
     }
