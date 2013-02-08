@@ -112,55 +112,42 @@ class qtype_cloud_renderer extends qtype_renderer {
             return '<center><font color="red">Failed to find server service url.</font></center>';
         }
 
-        // Get Server List
-        $server_image_list = $this->list_server_images($question, $server_endpoint_url, $ac_auth_token);
-        if (!empty($server_image_list->unauthorized)) {  // Token has expired
-            $response = $this->authorize($question);
+        // Get List of Server Images, Server Flavors, and Servers
+        $lists = array();
+        $lists["server_images"] = array('images/detail', 'images');
+        $lists["server_flavors"] = array('flavors', 'flavors');
+        $lists["servers"] = array('servers/detail', 'servers');
+        $list = new stdClass();
 
-            $ac_auth_token = $response->access->token->id;
+        foreach ($lists as $field=>$options) {
+            $list->$field = $this->get_list($question, $server_endpoint_url . '/' . $options[0] , $ac_auth_token);
+            if (!empty($list->$field->unauthorized)) {  // Token has expired
+                $response = $this->authorize($question);
 
-            $display_text = $this->save_auth_token($question, $ac_auth_token);
-            // Something went wrong accessing the account info
-            if (!empty($display_text)) {
-                return $display_text;
+                $ac_auth_token = $response->access->token->id;
+
+                $display_text = $this->save_auth_token($question, $ac_auth_token);
+                // Something went wrong accessing the account info
+                if (!empty($display_text)) {
+                    return $display_text;
+                }
+
+                $list->$field = $this->get_list($question, $server_endpoint_url . '/' . $options[0] , $ac_auth_token);
+                if (empty($list->$field->{$options[1]})) {
+                    return '<center><font color="red">Authorization token expired.  Failed to reauthenticate.</font></center>';
+                }
+            } elseif (empty($list->$field->{$options[1]})) {  // All other unwanted instances
+                return '<center><font color="red">Failed to retrieve ' . preg_replace('~_~', ' ', $field) . '.</font></center>';
             }
-
-            $server_image_list = $this->list_server_images($question, $server_endpoint_url, $ac_auth_token);
-            if (empty($server_image_list->images)) {
-                return '<center><font color="red">Authorization token expired.  Failed to reauthenticate.</font></center>';
-            }
-        } elseif (empty($server_image_list->images)) {  // All other unwanted instances
-            return '<center><font color="red">Failed to retrieve available server images.</font></center>';
         }
-
-        // Get Server Flavor List
-        $server_flavor_list = $this->list_server_flavors($question, $server_endpoint_url, $ac_auth_token);
-        if (!empty($server_flavor_list->unauthorized)) {  // Token has expired
-            $response = $this->authorize($question);
-
-            $ac_auth_token = $response->access->token->id;
-
-            $display_text = $this->save_auth_token($question, $ac_auth_token);
-            // Something went wrong accessing the account info
-            if (!empty($display_text)) {
-                return $display_text;
-            }
-
-            $server_flavor_list = $this->list_server_flavors($question, $server_endpoint_url, $ac_auth_token);
-            if (empty($server_flavor_list->flavors)) {
-                return '<center><font color="red">Authorization token expired.  Failed to reauthenticate.</font></center>';
-            }
-        } elseif (empty($server_flavor_list->flavors)) {  // All other unwanted instances
-            return '<center><font color="red">Failed to retrieve available server flavors.</font></center>';
-        }
-
 
         // Build Servers
+        $server_info = new stdClass();
         foreach ($question->servers as $key=>$server) {
             // Verify Server Image Name
             $server_image_id = NULL;
             $image_name = $question->servers[$key]->imagename;
-            foreach ($server_image_list->images as $image) {
+            foreach ($list->server_images->images as $image) {
                 if ($image->name === $image_name) {
                     $server_image_id = $image->id;
                     break;
@@ -184,14 +171,69 @@ class qtype_cloud_renderer extends qtype_renderer {
             $server_name[2] = substr(preg_replace('~\s+~', '_', trim($USER->username)), 0, 128-strlen(implode('_', $server_name)));
             $server_name = implode('_', $server_name);
 
-            // Create the Server
-            $this->create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id);
+            $server_info->name = $server_name;
+            $server_info->image_name = $image_name;
+            $server_info->flavor = $server_flavor_id;
 
-            // review json response for confirmation of server creation
+            // See if server name already exists and rebuild it if it does.
+            // If more than one exist then delete the extras.
+            $found_existing_server = FALSE;
+            foreach ($list->servers->servers as $server) {
+                if ($server->name === $server_name) {
+                    if (!$found_existing_server) {
+                        $found_existing_server = TRUE;
+                        // TODO: Rebuild the server with our image and resize to our size
+                        echo $OUTPUT->notification('Rebuild Server');
+                        // TODO: grab either public or private ip based on preference and use specified version
+                        $server_info->ip = $server->addresses->public[0]->addr;
+                        $server_info->username = 'admin';
+                        $server_info->link = $server->links[1];
+                        $server_info->id = $server->id;
+                        // Cannot recover password so reset the admin password
+//                        $server_info->password = $server->adminPass;
 
+                    } else {*/
+                        // Delete the server
+                        $this->delete_server($ac_auth_token, $server->id);
+                        echo $OUTPUT->notification('Delete Server');
+                    }
+                }
+            }
+
+            // Create the Server if we did not find one
+            if (!$found_existing_server) {
+                $server_response = $this->create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id);
+                if (!empty($server_response->unauthorized)) {  // Token has expired
+                    $response = $this->authorize($question);
+
+                    $ac_auth_token = $response->access->token->id;
+
+                    $display_text = $this->save_auth_token($question, $ac_auth_token);
+                    // Something went wrong accessing the account info
+                    if (!empty($display_text)) {
+                        return $display_text;
+                    }
+
+                    $server_response = $this->create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id);
+                    if (empty($server_response->server)) {
+                        return '<center><font color="red">Authorization token expired.  Failed to reauthenticate.</font></center>';
+                    }
+                } elseif (empty($server_response->server)) {
+                    return '<center><font color="red">Failed to create the server.<br />' . $server_response . '</font></center>';
+                }
+
+                // Store server info
+                $server_info->ip = 'no ip yet';
+                $server_info->username = 'admin';
+                $server_info->password = $server_response->server->adminPass;
+                $server_info->link = $server_response->server->links[1];
+                $server_info->id = $server_response->server->id;
+            }
 
             // print out server info
-
+            $display_text .= '<div style="margin:0 auto 0 auto;">New Server "' . $server_info->name . '" created.<br />IP: ' .
+                    $server_info->ip . '<br />Username: ' . $server_info->username .
+                    '<br />Password: ' . $server_info->password . '<br /></div>';
         }
 
         // get api auth token
@@ -204,38 +246,12 @@ class qtype_cloud_renderer extends qtype_renderer {
         return $display_text;
     }
 
-    private function list_server_flavors ($question, $server_endpoint_url, $ac_auth_token) {
-        global $OUTPUT;
-        // Initialise the JSON request.
-        $headers = array(
-            sprintf('X-Auth-Token: %s' , $ac_auth_token),
-            'Content-Type: application/json',
-            'Accept: application/json',
-            );
 
-        $path = array();
-        $path[] = $server_endpoint_url;
-        $path[] = 'flavors';
-        $url = implode("/", $path);
+    private function delete_server($ac_auth_token, $server_id){
 
-        // Perform the cURL request
-        $curl_ch = curl_init($url);
-        curl_setopt($curl_ch, CURLINFO_HEADER_OUT, 1);  // Output message is displayed
-        curl_setopt($curl_ch, CURLOPT_RETURNTRANSFER, 1);  // Make silent
-        curl_setopt($curl_ch, CURLOPT_HTTPHEADER, $headers);  // Set headers
-        $curl_result = curl_exec($curl_ch);
-
-//        echo curl_getinfo($curl_ch, CURLINFO_HEADER_OUT);
-
-        curl_close($curl_ch);
-
-//        echo $OUTPUT->notification($curl_result);
-
-        // Parse the returned json string
-        return json_decode($curl_result);
     }
 
-    private function list_server_images ($question, $server_endpoint_url, $ac_auth_token) {
+    private function get_list ($question, $url, $ac_auth_token) {
         global $OUTPUT;
         // Initialise the JSON request.
         $headers = array(
@@ -243,11 +259,6 @@ class qtype_cloud_renderer extends qtype_renderer {
             'Content-Type: application/json',
             'Accept: application/json',
             );
-
-        $path = array();
-        $path[] = $server_endpoint_url;
-        $path[] = 'images/detail';
-        $url = implode("/", $path);
 
         // Perform the cURL request
         $curl_ch = curl_init($url);
@@ -344,40 +355,37 @@ class qtype_cloud_renderer extends qtype_renderer {
         $ac_username = $question->username;
         $ac_password = $question->password;
 
-        // Initialise the JSON request.
+        $json_string = sprintf('{"auth":{"passwordCredentials":{"username":"%s", "password":"%s"}}}', $ac_username, $ac_password);
+
+        $url = "https://identity.api.rackspacecloud.com/v2.0/tokens";
+
+        // Perform the cURL request
+        return $this->send_json_curl_request($url, 'POST', $json_string);
+    }
+
+    public function send_json_curl_request ($url, $command_type = 'GET', $json_string = '', $extra_headers = array()) {
+        // Build the header.
         $headers = array(
             'Content-Type: application/json',
             'Accept: application/json',
             );
-
-        $json_string = sprintf('{"auth":{"passwordCredentials":{"username":"%s", "password":"%s"}}}', $ac_username, $ac_password);
-
-        $path = array();
-        $path[] = "https://identity.api.rackspacecloud.com";
-        $path[] = "v2.0";
-        $path[] = "tokens";
-        $url = implode("/", $path);
+        $headers = array_merge($headers, $extra_headers);
 
         // Perform the cURL request
         $curl_ch = curl_init($url);
         curl_setopt($curl_ch, CURLINFO_HEADER_OUT, 1);  // Output message is displayed
         curl_setopt($curl_ch, CURLOPT_RETURNTRANSFER, 1);  // Make silent
-        curl_setopt($curl_ch, CURLOPT_CUSTOMREQUEST, 'POST');  // HTTP Post
+        curl_setopt($curl_ch, CURLOPT_CUSTOMREQUEST, $command_type);  // HTTP Post
         curl_setopt($curl_ch, CURLOPT_HTTPHEADER, $headers);  // Set headers
         curl_setopt($curl_ch, CURLOPT_POSTFIELDS, $json_string);  // Set data
         $curl_result = curl_exec($curl_ch);
-
-//        echo curl_getinfo($curl_ch, CURLINFO_HEADER_OUT).'\n';
-
         curl_close($curl_ch);
-
-//        echo $OUTPUT->notification($curl_result);
 
         // Parse the returned json string
         return json_decode($curl_result);
     }
 
-    public function formulation_heading() {
+    public function formulation_heading () {
         return get_string('header', 'qtype_cloud');
     }
 }
