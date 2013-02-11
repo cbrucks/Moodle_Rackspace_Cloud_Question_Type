@@ -54,7 +54,7 @@ class qtype_cloud_renderer extends qtype_renderer {
         global $OUTPUT, $DB, $PAGE, $CFG;
 
         $PAGE->requires->js(new moodle_url($CFG->wwwroot . '/question/type/cloud/module.js'));
-        $this->jsmodule = array('name'=>'qtype_cloud', 'fullpath'=>'/question/type/cloud/module.js', 'requires'=>array('base', 'io', 'node', 'json', 'dom'), 'strings'=>array());
+        $this->jsmodule = array('name'=>'qtype_cloud', 'fullpath'=>'/question/type/cloud/module.js', 'requires'=>array('base', 'io', 'node', 'json'), 'strings'=>array());
 
         $question = $qa->get_question();
 
@@ -203,9 +203,9 @@ class qtype_cloud_renderer extends qtype_renderer {
             }
 
             // Create the Server if we did not find one
-            $server_info = new stdClass();
+//            $server_info = new stdClass();
             if (!$found_existing_server) {
-//                $server_response = $this->create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id);
+                $server_response = $this->create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id);
                 if (!empty($server_response->unauthorized)) {  // Token has expired
                     $response = $this->authorize($question);
 
@@ -222,18 +222,20 @@ class qtype_cloud_renderer extends qtype_renderer {
                         return '<center><font color="red">Authorization token expired.  Failed to reauthenticate.</font></center>';
                     }
 
-                    // Store server info
-                    $server_info->ip = 'no ip yet';
-                    $server_info->username = 'admin';
-                    $server_info->password = $server_response->server->adminPass;
-                    $server_info->link = $server_response->server->links[1];
-                    $server_info->id = $server_response->server->id;
-
-//                    $server_response = $this->get_list($server_endpoint_url . '/servers' . $server_response->server->id, $ac_auth_token);
-                    $server_info->ip = '<span class="server_ip_' . $key . '">server</span>';
                 } elseif (empty($server_response->server)) {
-//                    return '<center><font color="red">Failed to create the server.<br />' . $server_response . '</font></center>';
+                    return '<center><font color="red">Failed to create the server.<br />' . $server_response . '</font></center>';
                 }
+
+                // Store server info
+                $server_info->ip = 'no ip yet';
+                $server_info->username = 'admin';
+                $server_info->password = $server_response->server->adminPass;
+                $server_info->link = $server_response->server->links[1];
+                $server_info->id = $server_response->server->id;
+//                $server_info->id = 'server id number';
+
+//                $server_response = $this->get_list($server_endpoint_url . '/servers' . $server_response->server->id, $ac_auth_token);
+                $server_info->ip = '<span class="server_ip_' . $key . '">server</span>';
             }
 
             // print out server info
@@ -241,7 +243,11 @@ class qtype_cloud_renderer extends qtype_renderer {
                     $server_info->ip . '<br />Username: ' . $server_info->username .
                     '<br />Password: ' . $server_info->password . '</div><br />';
 
-            $PAGE->requires->js_init_call('M.qtype_cloud.init', array(), false, $this->jsmodule);
+            $PAGE->requires->js_init_call('M.qtype_cloud.init', array(array(
+                     'class'=>'server_ip_'.$key,
+                     'url'=>$server_endpoint_url . '/servers/' . $server_info->id . 'ips',
+                     'auth_token'=>$ac_auth_token,
+                     )), false, $this->jsmodule);
         }
 
         // get api auth token
