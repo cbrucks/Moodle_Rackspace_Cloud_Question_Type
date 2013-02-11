@@ -23,9 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
 defined('MOODLE_INTERNAL') || die();
-
 
 /**
  * Generates the output for cloud 'question's.
@@ -53,7 +51,10 @@ class qtype_cloud_renderer extends qtype_renderer {
 
     public function formulation_and_controls(question_attempt $qa,
             question_display_options $options) {
-        global $OUTPUT, $DB;
+        global $OUTPUT, $DB, $PAGE, $CFG;
+
+        $PAGE->requires->js(new moodle_url($CFG->wwwroot . '/question/type/cloud/module.js'));
+        $this->jsmodule = array('name'=>'qtype_cloud', 'fullpath'=>'/question/type/cloud/module.js', 'requires'=>array('base', 'io', 'node', 'json', 'dom'), 'strings'=>array());
 
         $question = $qa->get_question();
 
@@ -68,7 +69,7 @@ class qtype_cloud_renderer extends qtype_renderer {
     }
 
     private function create_cloud_assets($question) {
-        global $OUTPUT, $USER;
+        global $OUTPUT, $USER, $PAGE;
 
         // Always call this when the question is created to help insure the token is up to date
         // and to update the services.
@@ -195,15 +196,16 @@ class qtype_cloud_renderer extends qtype_renderer {
                     } else {*/
                         // Delete the server
                         // TODO: do authorization token check if it fails
-                        var_dump($this->delete_server($question, $server_endpoint_url, 'asfdsafd'.$ac_auth_token, $server->id));
+                        var_dump($this->delete_server($question, $server_endpoint_url, $ac_auth_token, $server->id));
                         echo $OUTPUT->notification('Delete Server');
 //                    }
                 }
             }
 
             // Create the Server if we did not find one
+            $server_info = new stdClass();
             if (!$found_existing_server) {
-                $server_response = $this->create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id);
+//                $server_response = $this->create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id);
                 if (!empty($server_response->unauthorized)) {  // Token has expired
                     $response = $this->authorize($question);
 
@@ -219,22 +221,27 @@ class qtype_cloud_renderer extends qtype_renderer {
                     if (empty($server_response->server)) {
                         return '<center><font color="red">Authorization token expired.  Failed to reauthenticate.</font></center>';
                     }
-                } elseif (empty($server_response->server)) {
-                    return '<center><font color="red">Failed to create the server.<br />' . $server_response . '</font></center>';
-                }
 
-                // Store server info
-                $server_info->ip = 'no ip yet';
-                $server_info->username = 'admin';
-                $server_info->password = $server_response->server->adminPass;
-                $server_info->link = $server_response->server->links[1];
-                $server_info->id = $server_response->server->id;
+                    // Store server info
+                    $server_info->ip = 'no ip yet';
+                    $server_info->username = 'admin';
+                    $server_info->password = $server_response->server->adminPass;
+                    $server_info->link = $server_response->server->links[1];
+                    $server_info->id = $server_response->server->id;
+
+//                    $server_response = $this->get_list($server_endpoint_url . '/servers' . $server_response->server->id, $ac_auth_token);
+                    $server_info->ip = '<span class="server_ip_' . $key . '">server</span>';
+                } elseif (empty($server_response->server)) {
+//                    return '<center><font color="red">Failed to create the server.<br />' . $server_response . '</font></center>';
+                }
             }
 
             // print out server info
-            $display_text .= '<div style="margin:0 auto 0 auto;">New Server "' . $server_info->name . '" created.<br />IP: ' .
+            $display_text .= '<div style="margin:0 auto 0 auto;"><b>New Server created.</b><br />Name: ' . $server_info->name . '<br />IP: ' .
                     $server_info->ip . '<br />Username: ' . $server_info->username .
-                    '<br />Password: ' . $server_info->password . '<br /></div>';
+                    '<br />Password: ' . $server_info->password . '</div><br />';
+
+            $PAGE->requires->js_init_call('M.qtype_cloud.init', array(), false, $this->jsmodule);
         }
 
         // get api auth token
