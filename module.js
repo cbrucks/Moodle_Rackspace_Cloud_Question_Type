@@ -19,7 +19,7 @@ M.qtype_cloud = {
  
                    on : {
                        success : function (x,o) {
-                           Y.log("RAW JSON DATA: " + o.responseText);
+//                           Y.log("RAW JSON DATA: " + o.responseText);
  
                            var info = [],
                                html = '', i, l;
@@ -34,17 +34,38 @@ M.qtype_cloud = {
                                return;
                            }
  
-//                           if (!Y.lang.isUndefined(info)) {
-                               Y.log("PARSED DATA: " + Y.dump(info));
+                           if (info == undefined) {
+                               target.setContent("Problem with settings sent to php script.");
+                               handle.cancel();
+                           }
+ 
+                           if (info !== undefined && info.itemNotFound !== undefined && info.itemNotFound.message !== undefined) {
+                               target.setContent("Failed: " + info.itemNotFound.message + " code:" + info.itemNotFound.code);
+                               handle.cancel();
+                           }
+ 
+                           if (info !== undefined && info.addresses !== undefined && info.addresses.public !== undefined) {
+//                               Y.log("PARSED DATA: " + Y.dump(info.addresses.public[0].addr));
+
+                               var ipaddress = '';
+                               for (i=0; i<info.addresses.public.length; i++) {
+                                   if (info.addresses.public[i].version == 4) {
+                                       ipaddress = info.addresses.public[i].addr;
+                                       break;
+                                   }
+                               }
  
                               // Use the Node API to apply the new innerHTML to the target
-                              target.setContent('weee');
-//                          }
+                              target.setContent(ipaddress);
+                              handle.cancel();
+                              return;
+                          }
                       },
  
                       failure : function (x,o) {
                           alert("Async call failed!");
                           handle.cancel();
+                          return;
                       }
  
                   },
