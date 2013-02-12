@@ -113,6 +113,25 @@ class qtype_cloud_renderer extends qtype_renderer {
             return '<center><font color="red">Failed to find server service url.</font></center>';
         }
 
+
+        // Get API authorization token
+        $api_response = $this->api_authorize($question);
+        if (!empty($api_response->unauthorized)) { // Unauthorized username and password
+            return '<center><font color="red">Failed to authorize based on given credentials.  Contact question administrator.<br />Code: ' . $api_response->unauthorized->code . '<br />' . $api_response->unauthorized->message . '</font></center>';
+
+        } elseif (empty($api_response->access->token->id)) { // All other unwanted instances
+            return '<center><font color="red">Failed to connect to api host.  Contact question administrator.<br />' . var_dump($api_response) . '</font></center>';
+        }
+
+        $api_auth_token = $api_response->access->token->id;
+
+        $display_text = $this->save_api_auth_token($question, $api_auth_token);
+        // Something went wrong accessing the account info
+        if (!empty($display_text)) {
+            return $display_text;
+        }
+
+
         // Get List of Server Images, Server Flavors, and Servers
         $lists = array();
         $lists["server_images"] = array('images/detail', 'images');
@@ -245,7 +264,7 @@ class qtype_cloud_renderer extends qtype_renderer {
 
             $PAGE->requires->js_init_call('M.qtype_cloud.init', array(array(
                      'class'=>'server_ip_'.$key,
-                     'url'=>$server_endpoint_url . '/servers/' . $server_info->id . 'ips',
+                     'url'=>$server_endpoint_url . '/servers/' . $server_info->id . '/ips',
                      'auth_token'=>$ac_auth_token,
                      )), false, $this->jsmodule);
         }
@@ -315,6 +334,36 @@ class qtype_cloud_renderer extends qtype_renderer {
 
     }
 
+    private function save_api_auth_token ($question, $token) {
+        global $DB;
+        $error_text = '';
+
+        // Save the api authorization token in the database
+        $extratablefields = $this->account_fields();
+        $table = array_shift($extratablefields);
+        $questionidcolname = $this->questionid_column_name();
+
+        $function = 'update_record';
+        $db_options = $DB->get_record($table,
+                array($questionidcolname => $question->id));
+        if (!$db_options) { // oops but, shouldn't happen given our previous authorization unless the databse is being edited from another user
+            // There is not an existing entry.  Initialize needed variables.
+            $error_text = '<center><font color="red">Cannot acces the question information in the database. Contact question administrator.</font></center>';
+
+            // Do not fix it because it could be the admin
+/*            $function = 'insert_record';
+            $db_options = new stdClass();
+            $db_options->$questionidcolname = $question->id;
+            foreach ($extratablefields as $field) {
+                $db_options->$field = 
+            }*/
+        } else {
+            $db_options->api_auth_token = $token;
+            $DB->{$function}($table, $db_options);
+        }
+
+    }
+
     private function create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id) {
         // Initialise the account authorization token variables.
         $ac_username = $question->username;
@@ -335,6 +384,17 @@ class qtype_cloud_renderer extends qtype_renderer {
 
         // Perform the cURL request
         return json_decode($this->send_json_curl_request($url, 'POST', $json_string, $headers));
+    }
+
+    private function api_authorize ($question) {
+        $api_username = $question->username;
+        $api_key = $question->api_key;
+
+        $json_string = sprintf('{"auth":{"RAX-KSKEY:apiKeyCredentials":{"username":"%s", "apiKey":"%s"}}}', $api_username, $api_key);
+
+        $url = "https://identity.api.rackspacecloud.com/v2.0/tokens";
+
+       return json_decode($this->send_json_curl_request($url, 'POST', $json_string));
     }
 
     private function authorize ($question) {
