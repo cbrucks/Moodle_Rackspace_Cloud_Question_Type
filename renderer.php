@@ -215,8 +215,8 @@ class qtype_cloud_renderer extends qtype_renderer {
                     } else {*/
                         // Delete the server
                         // TODO: do authorization token check if it fails
-                        var_dump($this->delete_server($question, $server_endpoint_url, $ac_auth_token, $server->id));
-                        echo $OUTPUT->notification('Delete Server');
+                        $this->delete_server($question, $server_endpoint_url, $ac_auth_token, $server->id);
+//                        echo $OUTPUT->notification('Delete Server');
 //                    }
                 }
             }

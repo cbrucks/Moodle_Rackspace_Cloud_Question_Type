@@ -3,6 +3,8 @@ M.qtype_cloud = {
     init: function(Y, params) {
         YUI.namespace('global');
 
+        var loopCount = 0;
+
         YUI().use('io-base', 'dump', 'querystring-stringify-simple', function(Y) {
            YUI.global.get_ip_address = function(Y,params) {
 
@@ -19,7 +21,18 @@ M.qtype_cloud = {
  
                    on : {
                        success : function (x,o) {
-//                           Y.log("RAW JSON DATA: " + o.responseText);
+                          var output = "(Building Server. Please wait";
+                          for (i=0; i<loopCount; i++) {
+                              output += '.';
+                          }
+                          target.setContent(output + ")");
+                          if (loopCount < 3) {
+                              loopCount++;
+                          } else {
+                              loopCount = 0;
+                          }
+
+                           Y.log("RAW JSON DATA: " + o.responseText);
  
                            var info = [],
                                html = '', i, l;
@@ -29,7 +42,7 @@ M.qtype_cloud = {
                                info = Y.JSON.parse(o.responseText);
                            }
                            catch (e) {
-                               alert("JSON Parse failed!");
+                               target.setContent("JSON Parse failed!");
                                handle.cancel();
                                return;
                            }
@@ -63,7 +76,7 @@ M.qtype_cloud = {
                       },
  
                       failure : function (x,o) {
-                          alert("Async call failed!");
+                          target.setContent("Async call failed!");
                           handle.cancel();
                           return;
                       }
@@ -82,7 +95,7 @@ M.qtype_cloud = {
            }
        });
 
-       var handle = Y.later(10000, window, YUI.global.get_ip_address, [Y, params], true);
+       var handle = Y.later(3000, window, YUI.global.get_ip_address, [Y, params], true);
     }
 };
 
