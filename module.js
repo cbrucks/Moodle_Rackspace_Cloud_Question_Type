@@ -98,5 +98,3 @@ M.qtype_cloud = {
        var handle = Y.later(3000, window, YUI.global.get_ip_address, [Y, params], true);
     }
 };
-
-

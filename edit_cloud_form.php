@@ -51,12 +51,10 @@ class qtype_cloud_edit_form extends question_edit_form {
         $mform->addElement('header', 'ca_header', get_string('ca_header', 'qtype_cloud'));
         $mform->addElement('text', 'username', get_string('ca_username', 'qtype_cloud'));
         $mform->addElement('passwordunmask', 'password', get_string('ca_password', 'qtype_cloud'));
-        $mform->addElement('passwordunmask', 'api_key', get_string('ca_api_key', 'qtype_cloud'));
         $mform->addElement('select', 'region', get_string('lb_region', 'qtype_cloud'), array(get_string('lb_region_dfw', 'qtype_cloud'), get_string('lb_region_ord', 'qtype_cloud')));
 
         $mform->addRule('username', null, 'required', null, 'client');
         $mform->addRule('password', null, 'required', null, 'client');
-        $mform->addRule('api_key', null, 'required', null, 'client');
 
         $mform->addElement('header', 'lb_header', get_string('lb_header', 'qtype_cloud'));
         $mform->addElement('text', 'lb_name', get_string('lb_name', 'qtype_cloud'));
@@ -71,6 +69,7 @@ class qtype_cloud_edit_form extends question_edit_form {
 
         $repeated = array();
         $repeated[] = $mform->createElement('header', 'server_header', $label);
+        $repeated[] = $mform->createElement('text', 'srv_name', get_string('srv_name', 'qtype_cloud'));
         $repeated[] = $mform->createElement('text', 'imagename', get_string('srv_image', 'qtype_cloud'));
         $repeated[] = $mform->createElement('select', 'slicesize', get_string('srv_size', 'qtype_cloud'), array(get_string('srv_size_half', 'qtype_cloud'), get_string('srv_size_1', 'qtype_cloud'), get_string('srv_size_2', 'qtype_cloud'), get_string('srv_size_4', 'qtype_cloud'), get_string('srv_size_8', 'qtype_cloud'), get_string('srv_size_15', 'qtype_cloud'), get_string('srv_size_30', 'qtype_cloud')));
 

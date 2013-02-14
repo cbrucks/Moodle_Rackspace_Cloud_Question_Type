@@ -37,9 +37,36 @@ function xmldb_qtype_cloud_upgrade($oldversion = 0) {
 
     $result = true;
 
-    $newversion = 2013020800;
+    $newversion = 2013021400;
 
     if ($oldversion < $newversion) {
+        // Define field api_key to be dropped from question_cloud_account
+        $table = new xmldb_table('question_cloud_account');
+        $field = new xmldb_field('api_key');
+
+        // Conditionally launch drop field api_key
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        // Define field api_auth_token to be dropped from question_cloud_account
+        $table = new xmldb_table('question_cloud_account');
+        $field = new xmldb_field('api_auth_token');
+
+        // Conditionally launch drop field api_auth_token
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        // Define field srv_name to be added to question_cloud_server
+        $table = new xmldb_table('question_cloud_server');
+        $field = new xmldb_field('srv_name', XMLDB_TYPE_CHAR, '128', null, XMLDB_NOTNULL, null, 'Old_Servers', 'num');
+
+        // Conditionally launch add field srv_name
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
         // cloud savepoint reached
         upgrade_plugin_savepoint(true, $newversion, 'qtype', 'cloud');
     }

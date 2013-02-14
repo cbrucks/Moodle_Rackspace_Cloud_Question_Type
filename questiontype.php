@@ -75,7 +75,7 @@ class qtype_cloud extends question_type {
     }
 
     public function account_fields() {
-        return array('question_cloud_account', 'username', 'password', 'auth_token', 'api_key', 'api_auth_token', 'region');
+        return array('question_cloud_account', 'username', 'password', 'auth_token', 'region');
     }
 
     public function lb_fields() {
@@ -83,7 +83,7 @@ class qtype_cloud extends question_type {
     }
 
     public function server_fields() {
-        return array('question_cloud_server', 'num', 'imagename', 'slicesize');
+        return array('question_cloud_server', 'num', 'srv_name', 'imagename', 'slicesize');
     }
 
     protected function initialise_question_instance(question_definition $question, $questiondata) {
@@ -107,7 +107,7 @@ class qtype_cloud extends question_type {
     public function save_question_options($question) {
         $this->save_generic_question_options($question, $this->account_fields(), array());
         $this->save_generic_question_options($question, $this->lb_fields(), array('lb_name'=>'notempty'));
-        $this->save_generic_question_options($question, $this->server_fields(), array('imagename'=>'notempty'), TRUE);
+        $this->save_generic_question_options($question, $this->server_fields(), array('srv_name'=>'notempty', 'imagename'=>'notempty'), TRUE);
     }
 
     private function save_generic_question_options($question, $extraquestionfields, $validity_conditions=NULL, $multiple_options=FALSE) {
