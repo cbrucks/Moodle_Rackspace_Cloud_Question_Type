@@ -4,6 +4,7 @@ M.qtype_cloud = {
         YUI.namespace('global');
 
         var loopCount = 0;
+        var ipaddress = '';
 
         YUI().use('io-base', 'dump', 'querystring-stringify-simple', function(Y) {
             YUI.global.get_ip_address = function(Y,params) {
@@ -15,7 +16,7 @@ M.qtype_cloud = {
                 // Create the io callback/configuration
                 var callback = {
  
-                    timeout : 3000,
+                    timeout : 5000,
 
                     responseType: 'json',
  
@@ -24,7 +25,7 @@ M.qtype_cloud = {
                             var info = [],
                                 html = '', i;
                                 
-                            var output = "(Building Server. Please wait";
+                            var output = ((ipaddress.length === 0)? "(Building Server. " : ipaddress + " (Installing OS. " ) + "Please wait";
                             for (i=0; i<loopCount; i++) {
                                 output += '.';
                             }
@@ -58,24 +59,25 @@ M.qtype_cloud = {
                             }
                            
                            
-                           if (info.server !== undefined && info.server.status !== undefined && info.server.status == "ACTIVE" &&
-                                       info.server.addresses !== undefined && info.server.addresses.public !== undefined) {
-                               var ipaddress = '';
+                           if (ipaddress.length === 0 && info.server !== undefined && info.server.addresses !== undefined && info.server.addresses.public !== undefined) {
                                for (i=0; i<info.server.addresses.public.length; i++) {
                                    if (info.server.addresses.public[i].version == 4) {
                                        ipaddress = info.server.addresses.public[i].addr;
                                        break;
                                    }
                                }
- 
-                              // Use the Node API to apply the new innerHTML to the target
-                              target.setContent(ipaddress);
 
                               // replace all environment variables
                               body = Y.one(document.body);
                               var body_text = body.getContent();
                               body_text = body_text.replace("[%=" + params["class"] + "%]", ipaddress);
                               body.setContent(body_text);
+
+                           }
+
+                           if (info.server!== undefined && info.server.status !== undefined && info.server.status == "ACTIVE") {
+                              // Use the Node API to apply the new innerHTML to the target
+                              target.setContent(ipaddress);
 
                               handle.cancel();
                               return;
