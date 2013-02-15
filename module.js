@@ -21,8 +21,11 @@ M.qtype_cloud = {
  
                     on : {
                         success : function (x,o) {
+                            var info = [],
+                                html = '', i;
+                                
                             var output = "(Building Server. Please wait";
-                            for (var i=0; i<loopCount; i++) {
+                            for (i=0; i<loopCount; i++) {
                                 output += '.';
                             }
                             target.setContent(output + ")");
@@ -34,21 +37,17 @@ M.qtype_cloud = {
 
                             Y.log("crap RAW JSON DATA: " + o.responseText);
  
-                            var info = [],
-                                html = '', i, l;
- 
                             // Process the JSON data returned from the server
                             try {
                                 info = Y.JSON.parse(o.responseText);
                                 Y.log(info.server.status);
-                            }
-                            catch (e) {
+                            } catch (e) {
                                 target.setContent("JSON Parse failed!");
                                 handle.cancel();
                                 return;
                             }
  
-                            if (info == undefined) {
+                            if (info === undefined) {
                                 target.setContent("Problem with settings sent to php script.");
                                 handle.cancel();
                             }
@@ -63,7 +62,7 @@ M.qtype_cloud = {
 
                                 var ipaddress = '';
                                 for (i=0; i<info.addresses.public.length; i++) {
-                                    if (info.addresses.public[i].version == 4) {
+                                    if (info.addresses.public[i].version === 4) {
                                         ipaddress = info.addresses.public[i].addr;
                                         break;
                                     }
