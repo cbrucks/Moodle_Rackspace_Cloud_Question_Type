@@ -235,7 +235,7 @@ class qtype_cloud_renderer extends qtype_renderer {
 //                $server_info->id = 'server id number';
 
 //                $server_response = $this->get_list($server_endpoint_url . '/servers' . $server_response->server->id, $ac_auth_token);
-                $server_info->ip = '<span class="server_ip_' . $key . '">(Building Server. Please wait...)</span>';
+                $server_info->ip = '<span class="server_ip_' . ($key+1) . '">(Building Server. Please wait...)</span>';
             }
 
             // print out server info
@@ -244,10 +244,10 @@ class qtype_cloud_renderer extends qtype_renderer {
                     '<br />Password: ' . $server_info->password . '</div><br />';
 
             $PAGE->requires->js_init_call('M.qtype_cloud.init', array(array(
-                     'class'=>'server_ip_'.$key,
                      'url'=>$server_endpoint_url . '/servers/' . $server_info->id . '',
                      'auth_token'=>$ac_auth_token,
-                     'div_class'=>'.server_ip_' .$key,
+                     'class'=>'server_ip_'.($key+1),
+                     'div_class'=>'.server_ip_' .($key+1),
                      )), false, $this->jsmodule);
         }
 

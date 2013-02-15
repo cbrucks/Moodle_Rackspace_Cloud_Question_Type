@@ -32,7 +32,7 @@ M.qtype_cloud = {
                               loopCount = 0;
                           }
 
-                           Y.log("crap RAW JSON DATA: " + o.responseText);
+                           Y.log("RAW JSON DATA: " + o.responseText);
  
                            var info = [],
                                html = '', i, l;
@@ -40,7 +40,6 @@ M.qtype_cloud = {
                            // Process the JSON data returned from the server
                            try {
                                info = Y.JSON.parse(o.responseText);
-                               Y.log(info.server.status);
                            }
                            catch (e) {
                                target.setContent("JSON Parse failed!");
@@ -58,19 +57,26 @@ M.qtype_cloud = {
                                handle.cancel();
                            }
                            
-                           Y.log("PARSED DATA: " + Y.dump(info));
-                           if (info.addresses !== undefined && info.addresses.public !== undefined) {
-
+                           
+                           if (info.server !== undefined && info.server.status !== undefined && info.server.status == "ACTIVE" &&
+                                       info.server.addresses !== undefined && info.server.addresses.public !== undefined) {
                                var ipaddress = '';
-                               for (i=0; i<info.addresses.public.length; i++) {
-                                   if (info.addresses.public[i].version == 4) {
-                                       ipaddress = info.addresses.public[i].addr;
+                               for (i=0; i<info.server.addresses.public.length; i++) {
+                                   if (info.server.addresses.public[i].version == 4) {
+                                       ipaddress = info.server.addresses.public[i].addr;
                                        break;
                                    }
                                }
  
                               // Use the Node API to apply the new innerHTML to the target
                               target.setContent(ipaddress);
+
+                              // replace all environment variables
+                              body = Y.one(document.body);
+                              var body_text = body.getContent();
+                              body_text = body_text.replace("[%=" + params["class"] + "%]", ipaddress);
+                              body.setContent(body_text);
+
                               handle.cancel();
                               return;
                           }
@@ -92,7 +98,6 @@ M.qtype_cloud = {
               };              
 
               Y.io(location.protocol + '//' + location.host + '/question/type/cloud/getipaddress.php?url=' + params["url"] + '&command_type=GET&extra_headers[]=X-Auth-Token:' + params["auth_token"], callback);
-              Y.log(location.protocol + '//' + location.host + '/question/type/cloud/getipaddress.php?url=' + params["url"] + '&command_type=GET&extra_headers[]=X-Auth-Token:' + params["auth_token"]);
            }
        });
 

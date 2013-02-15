@@ -241,26 +241,31 @@ class qtype_cloud extends question_type {
                     array($this->questionid_column_name() => $question->id), '',
                     implode(', ', $extraquestionfields));
 
-            if ($extra_data) {
 //                echo $OUTPUT->notification(var_dump($extra_data));
 
-                if ($accept_multiple_records) {
-                    $question->options->servers = array();
+            if ($accept_multiple_records) {
+                $question->options->servers = array();
+                if ($extra_data) {
                     foreach ($extra_data as $extra_data_single) {
                         $question->options->servers[] = $extra_data_single;
                     }
-
-//                    echo $OUTPUT->notification(var_dump($question->options));
                 } else {
+//                    echo $OUTPUT->notification('Failed to load question options from the table ' .
+//                            $question_extension_table . ' for questionid ' . $question->id);
+                    return false;
+                }
+//                echo $OUTPUT->notification(var_dump($question->options));
+            } else {
+                if ($extra_data) {
                     $extra_data = array_shift($extra_data);
                     foreach ($extraquestionfields as $field) {
                         $question->options->$field = $extra_data->$field;
                     }
+                } else {
+//                    echo $OUTPUT->notification('Failed to load question options from the table ' .
+//                            $question_extension_table . ' for questionid ' . $question->id);
+                    return false;
                 }
-            } else {
-//                echo $OUTPUT->notification('Failed to load question options from the table ' .
-//                        $question_extension_table . ' for questionid ' . $question->id);
-                return false;
             }
         }
         return true;

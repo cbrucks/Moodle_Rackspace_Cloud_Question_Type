@@ -112,6 +112,7 @@ class qtype_cloud_edit_form extends question_edit_form {
         }
 
         foreach ($question->options->servers as $key=>$server) {
+            $question->srv_name[$key] = $server->srv_name;
             $question->imagename[$key] = $server->imagename;
             $question->slicesize[$key] = $server->slicesize;
         }

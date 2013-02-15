@@ -46,6 +46,7 @@ $string['lb_region_dfw'] = 'Dallas (DFW)';
 $string['lb_region_ord'] = 'Chicago (ORD)';
 
 $string['serverno'] = 'Server {$a}';
+$string['srv_name'] = 'Server Name';
 $string['srv_image'] = 'Image Name';
 $string['srv_size'] = 'Size';
 $string['srv_size_half'] = '512MB - 20GB';
