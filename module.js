@@ -6,6 +6,9 @@ M.qtype_cloud = {
         var loopCount = 0;
         var ipaddress = '';
 
+        // hide the question text until the ip environment variable is set with the ip address
+        Y.one(".qtext").setStyle('display', 'none');
+
         YUI().use('io-base', 'dump', 'querystring-stringify-simple', function(Y) {
             YUI.global.get_ip_address = function(Y,params) {
 
@@ -73,6 +76,8 @@ M.qtype_cloud = {
                               body_text = body_text.replace("[%=" + params["class"] + "%]", ipaddress);
                               body.setContent(body_text);
 
+                              // reveal the question text with the IP environment variable replaced
+                              Y.one(".qtext").setStyle('display', 'inline');
                            }
 
                            if (info.server!== undefined && info.server.status !== undefined && info.server.status == "ACTIVE") {
