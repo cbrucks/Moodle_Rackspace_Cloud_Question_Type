@@ -32,7 +32,7 @@ M.qtype_cloud = {
                               loopCount = 0;
                           }
 
-                           Y.log("RAW JSON DATA: " + o.responseText);
+                           Y.log("crap RAW JSON DATA: " + o.responseText);
  
                            var info = [],
                                html = '', i, l;
@@ -40,6 +40,7 @@ M.qtype_cloud = {
                            // Process the JSON data returned from the server
                            try {
                                info = Y.JSON.parse(o.responseText);
+                               Y.log(info.server.status);
                            }
                            catch (e) {
                                target.setContent("JSON Parse failed!");
@@ -52,13 +53,13 @@ M.qtype_cloud = {
                                handle.cancel();
                            }
  
-                           if (info !== undefined && info.itemNotFound !== undefined && info.itemNotFound.message !== undefined) {
-                               target.setContent("Failed: " + info.itemNotFound.message + " code:" + info.itemNotFound.code);
+                           if (info.itemNotFound !== undefined && info.itemNotFound.message !== undefined) {
+                               target.setContent("Failed: " + info.itemNotFound.message + "    Code:" + info.itemNotFound.code);
                                handle.cancel();
                            }
- 
-                           if (info !== undefined && info.addresses !== undefined && info.addresses.public !== undefined) {
-//                               Y.log("PARSED DATA: " + Y.dump(info.addresses.public[0].addr));
+                           
+                           Y.log("PARSED DATA: " + Y.dump(info));
+                           if (info.addresses !== undefined && info.addresses.public !== undefined) {
 
                                var ipaddress = '';
                                for (i=0; i<info.addresses.public.length; i++) {
