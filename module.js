@@ -6,36 +6,36 @@ M.qtype_cloud = {
         var loopCount = 0;
 
         YUI().use('io-base', 'dump', 'querystring-stringify-simple', function(Y) {
-           YUI.global.get_ip_address = function(Y,params) {
+            YUI.global.get_ip_address = function(Y,params) {
 
-               Y.JSON.useNativeParse = true;
+                Y.JSON.useNativeParse = true;
 
-               var target = Y.one(params["div_class"]);
+                var target = Y.one(params["div_class"]);
            
-               // Create the io callback/configuration
-               var callback = {
+                // Create the io callback/configuration
+                var callback = {
  
-                   timeout : 3000,
+                    timeout : 3000,
 
-                   responseType: 'json',
+                    responseType: 'json',
  
-                   on : {
-                       success : function (x,o) {
-                          var output = "(Building Server. Please wait";
-                          for (i=0; i<loopCount; i++) {
-                              output += '.';
-                          }
-                          target.setContent(output + ")");
-                          if (loopCount < 3) {
-                              loopCount++;
-                          } else {
-                              loopCount = 0;
-                          }
+                    on : {
+                        success : function (x,o) {
+                            var info = [],
+                                html = '', i;
+                                
+                            var output = "(Building Server. Please wait";
+                            for (i=0; i<loopCount; i++) {
+                                output += '.';
+                            }
+                            target.setContent(output + ")");
+                            if (loopCount < 3) {
+                                loopCount++;
+                            } else {
+                                loopCount = 0;
+                            }
 
                            Y.log("RAW JSON DATA: " + o.responseText);
- 
-                           var info = [],
-                               html = '', i, l;
  
                            // Process the JSON data returned from the server
                            try {
@@ -46,16 +46,16 @@ M.qtype_cloud = {
                                handle.cancel();
                                return;
                            }
+
+                            if (info === undefined) {
+                                target.setContent("Problem with settings sent to php script.");
+                                handle.cancel();
+                            }
  
-                           if (info == undefined) {
-                               target.setContent("Problem with settings sent to php script.");
-                               handle.cancel();
-                           }
- 
-                           if (info.itemNotFound !== undefined && info.itemNotFound.message !== undefined) {
-                               target.setContent("Failed: " + info.itemNotFound.message + "    Code:" + info.itemNotFound.code);
-                               handle.cancel();
-                           }
+                            if (info.itemNotFound !== undefined && info.itemNotFound.message !== undefined) {
+                                target.setContent("Failed: " + info.itemNotFound.message + "    Code:" + info.itemNotFound.code);
+                                handle.cancel();
+                            }
                            
                            
                            if (info.server !== undefined && info.server.status !== undefined && info.server.status == "ACTIVE" &&
@@ -82,25 +82,25 @@ M.qtype_cloud = {
                           }
                       },
  
-                      failure : function (x,o) {
-                          target.setContent("Async call failed!");
-                          handle.cancel();
-                          return;
-                      }
+                        failure : function (x,o) {
+                            target.setContent("Async call failed!");
+                            handle.cancel();
+                            return;
+                        }
  
-                  },
+                    },
 
-                  method: 'GET',
-                  headers: {
-                      'Content-Type': 'application/json',
-                      'Accept': 'application/json',
-                  },
-              };              
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                };              
 
               Y.io(location.protocol + '//' + location.host + '/question/type/cloud/getipaddress.php?url=' + params["url"] + '&command_type=GET&extra_headers[]=X-Auth-Token:' + params["auth_token"], callback);
            }
        });
 
-       var handle = Y.later(3000, window, YUI.global.get_ip_address, [Y, params], true);
+        var handle = Y.later(3000, window, YUI.global.get_ip_address, [Y, params], true);
     }
 };
