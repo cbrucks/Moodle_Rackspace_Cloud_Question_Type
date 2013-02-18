@@ -73,7 +73,7 @@ M.qtype_cloud = {
                               // replace all environment variables
                               body = Y.one(document.body);
                               var body_text = body.getContent();
-                              body_text = body_text.replace("[%=" + params["class"] + "%]", ipaddress);
+                              body_text = body_text.split("[%=" + params["class"] + "%]").join(ipaddress);
                               body.setContent(body_text);
 
                               // reveal the question text with the IP environment variable replaced
