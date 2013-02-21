@@ -24,6 +24,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
+require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 /**
  * Generates the output for cloud 'question's.
@@ -58,7 +59,7 @@ class qtype_cloud_renderer extends qtype_renderer {
 
         $question = $qa->get_question();
 
-        $cloud_text = $this->create_cloud_assets($question) . '<br /><br /><br /> <br />';
+        $cloud_text = $this->create_cloud_assets($question, $qa) . '<br /><br /><br /> <br />';
 
         $html = html_writer::tag('div', $qa->get_question()->format_text($cloud_text, FORMAT_HTML, $qa, 'cloud', 'accountinfo', $question->id));
 
@@ -68,8 +69,8 @@ class qtype_cloud_renderer extends qtype_renderer {
         return $html;
     }
 
-    private function create_cloud_assets($question) {
-        global $OUTPUT, $USER, $PAGE;
+    private function create_cloud_assets($question, question_attempt $qa) {
+        global $OUTPUT, $USER, $PAGE, $DB;
 
         // Always call this when the question is created to help insure the token is up to date
         // and to update the services.
@@ -162,12 +163,19 @@ class qtype_cloud_renderer extends qtype_renderer {
             // Get Server Flavor
             $server_flavor_id = $question->servers[$key]->slicesize + 2;
 
+            // Get Attempt ID
+            $user_id = $USER->id;
+            $unique_id = $qa->get_database_id();
+            $attempt_id = $DB->get_field('quiz_attempts','id', array('uniqueid' => $unique_id, 'userid' => $user_id, 'state' => "inprogress"));
+            $OUTPUT->notification(strval($attempt_id));
+
             // Build server name.
             $server_name = array();
             $server_name[] = preg_replace('~\s+~', '_', trim($question->servers[$key]->srv_name)) . '.';
             $server_name[] = '';  // $USER->username
             $server_name[] = $question->id . '_';
-            $server_name[] = $question->servers[$key]->num;
+            $server_name[] = $question->servers[$key]->num . '_';
+            $server_name[] = $attempt_id;
 
             $server_name[1] = substr(preg_replace('~\s+~', '_', trim($USER->username)), 0, 128-strlen(implode('_', $server_name))) . '_';
             $server_name = implode($server_name);
@@ -181,24 +189,29 @@ class qtype_cloud_renderer extends qtype_renderer {
             $found_existing_server = FALSE;
             foreach ($list->servers->servers as $server) {
                 if ($server->name === $server_name) {
-/*                    if (!$found_existing_server) {
+                    if (!$found_existing_server) {
                         $found_existing_server = TRUE;
-                        // TODO: Rebuild the server with our image and resize to our size
-                        echo $OUTPUT->notification('Rebuild Server');
-                        // TODO: grab either public or private ip based on preference and use specified version
-                        $server_info->ip = $server->addresses->public[0]->addr;
+                        // TODO: check to see if it is the right size and image.  if not rebuild it.
+
+                        foreach ($server->addresses->public as $address) {
+                            if ($address->version === 4) {
+                                $server_info->ip = $address->addr;
+                            }
+                        }
+                $server_info->ip = '<span class="server_ip_' . ($key+1) . '">(Building Server. Please wait...)</span>';
                         $server_info->username = 'admin';
                         $server_info->link = $server->links[1];
                         $server_info->id = $server->id;
                         // Cannot recover password so reset the admin password
-//                        $server_info->password = $server->adminPass;
+                        $server_info->password = uniqid();
+                        $this->set_server_password($question, $server_endpoint_url, $ac_auth_token, $server_info->id, $server_info->password);
 
-                    } else {*/
+                    } else {
                         // Delete the server
                         // TODO: do authorization token check if it fails
                         $this->delete_server($question, $server_endpoint_url, $ac_auth_token, $server->id);
 //                        echo $OUTPUT->notification('Delete Server');
-//                    }
+                    }
                 }
             }
 
@@ -227,28 +240,28 @@ class qtype_cloud_renderer extends qtype_renderer {
                 }
 
                 // Store server info
-                $server_info->ip = 'no ip yet';
                 $server_info->username = 'root (Linux) / admin (Windows)';
                 $server_info->password = $server_response->server->adminPass;
                 $server_info->link = $server_response->server->links[1];
                 $server_info->id = $server_response->server->id;
-//                $server_info->id = 'server id number';
-
-//                $server_response = $this->get_list($server_endpoint_url . '/servers' . $server_response->server->id, $ac_auth_token);
                 $server_info->ip = '<span class="server_ip_' . ($key+1) . '">(Building Server. Please wait...)</span>';
+
             }
 
             // print out server info
-            $display_text .= '<div style="margin:0 auto 0 auto;"><b>New Server created.</b><br />IP: ' .
+            $display_text .= '<div style="margin:0 auto 0 auto;"><b>' . (($found_existing_server)? 'Server Already Exists':'New Server Created') . '</b><br />IP: ' .
                     $server_info->ip . '<br />Username: ' . $server_info->username .
                     '<br />Password: ' . $server_info->password . '</div><br />';
 
+            // if we have to wait for the server to be created then start the javascript that will update the fields
             $PAGE->requires->js_init_call('M.qtype_cloud.init', array(array(
                      'url'=>$server_endpoint_url . '/servers/' . $server_info->id . '',
                      'auth_token'=>$ac_auth_token,
                      'class'=>'server_ip_'.($key+1),
                      'div_class'=>'.server_ip_' .($key+1),
                      )), false, $this->jsmodule);
+
+
         }
 
         // do the same thing for cloud load balancers
@@ -257,6 +270,15 @@ class qtype_cloud_renderer extends qtype_renderer {
         return $display_text;
     }
 
+    private function set_server_password($question, $server_endpoint_url, $ac_auth_token, $server_id, $new_password) {
+        $headers = array(
+            sprintf('X-Auth-Token: %s', $ac_auth_token),
+            );
+        $url = $server_endpoint_url . '/servers/' . $server_id . '/action';
+        $json_string = sprintf('{"changePassword":{"adminPass":"%s"}}', $new_password);
+
+        $this->send_json_curl_request($url, 'POST', $json_string, $headers);
+    }
 
     private function delete_server($question, $server_endpoint_url, $ac_auth_token, $server_id){
         // Initialise extra header entries.
