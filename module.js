@@ -1,9 +1,11 @@
 M.qtype_cloud = {
 
     init: function(Y, params) {
+
         YUI.namespace('global');
 
         var loopCount = 0;
+        var endCount = 0;
         var ipaddress = '';
 
         // hide the question text until the ip environment variable is set with the ip address
@@ -28,17 +30,6 @@ M.qtype_cloud = {
                             var info = [],
                                 html = '', i;
                                 
-                            var output = ((ipaddress.length === 0)? "(Building Server. " : ipaddress + " (Installing OS. " ) + "Please wait";
-                            for (i=0; i<loopCount; i++) {
-                                output += '.';
-                            }
-                            target.setContent(output + ")");
-                            if (loopCount < 3) {
-                                loopCount++;
-                            } else {
-                                loopCount = 0;
-                            }
-
                            Y.log("RAW JSON DATA: " + o.responseText);
  
                            // Process the JSON data returned from the server
@@ -80,13 +71,30 @@ M.qtype_cloud = {
                               Y.one(".qtext").setStyle('display', 'inline');
                            }
 
-                           if (info.server!== undefined && info.server.status !== undefined && info.server.status == "ACTIVE") {
+                           // Do this check a few times before continuing.  (weird bug fix)
+                           if (endCount < 2) {
+                               endCount++;
+                           } else
+                           if (ipaddress.length !==0 && info.server!== undefined && info.server.status !== undefined && info.server.status === "ACTIVE") {
                               // Use the Node API to apply the new innerHTML to the target
+                              Y.log('adaslfja;slkfj;alksfjd;lasjf;lajksfdl;ksafda');
                               target.setContent(ipaddress);
 
                               handle.cancel();
                               return;
-                          }
+                           }
+
+                           var output = ((ipaddress.length === 0)? "(Building Server. " : ipaddress + " (Configuring Server. " ) + "Please wait";
+                           for (i=0; i<loopCount; i++) {
+                               output += '.';
+                           }
+                           target.setContent(output + ")");
+                           if (loopCount < 3) {
+                               loopCount++;
+                           } else {
+                               loopCount = 0;
+                           }
+
                       },
  
                         failure : function (x,o) {
