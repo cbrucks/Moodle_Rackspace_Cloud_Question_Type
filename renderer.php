@@ -193,12 +193,12 @@ class qtype_cloud_renderer extends qtype_renderer {
                         $found_existing_server = TRUE;
                         // TODO: check to see if it is the right size and image.  if not rebuild it.
 
-                        foreach ($server->addresses->public as $address) {
+/*                        foreach ($server->addresses->public as $address) {
                             if ($address->version === 4) {
                                 $server_info->ip = $address->addr;
                             }
-                        }
-                $server_info->ip = '<span class="server_ip_' . ($key+1) . '">(Building Server. Please wait...)</span>';
+                        }*/
+                        $server_info->ip = '<span class="server_ip_' . ($key+1) . '">(Building Server. Please wait...)</span>';
                         $server_info->username = 'admin';
                         $server_info->link = $server->links[1];
                         $server_info->id = $server->id;

@@ -77,7 +77,6 @@ M.qtype_cloud = {
                            } else
                            if (ipaddress.length !==0 && info.server!== undefined && info.server.status !== undefined && info.server.status === "ACTIVE") {
                               // Use the Node API to apply the new innerHTML to the target
-                              Y.log('adaslfja;slkfj;alksfjd;lasjf;lajksfdl;ksafda');
                               target.setContent(ipaddress);
 
                               handle.cancel();
