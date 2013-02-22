@@ -2,30 +2,65 @@ M.qtype_cloud = {
 
     init: function(Y, params) {
 
+        // hide the question text until the ip environment variable is set with the ip address
+        Y.one(".qtext").setStyle('display', 'none');
+        
         YUI.namespace('global');
 
+        var base_url = params['url'];
+        var auth_token = params['auth_token'];
+        var servers = params['severs'];
+        
         var loopCount = 0;
         var endCount = 0;
         var ipaddress = '';
 
-        // hide the question text until the ip environment variable is set with the ip address
-        Y.one(".qtext").setStyle('display', 'none');
 
         YUI().use('io-base', 'dump', 'querystring-stringify-simple', function(Y) {
-            YUI.global.get_ip_address = function(Y,params) {
-
+            YUI.global.get_ip_address = function(Y, handle_i, server_info) {
+                
                 Y.JSON.useNativeParse = true;
+                
+                var target = Y.one(server_info["class"]);
 
-                var target = Y.one(params["div_class"]);
-           
                 // Create the io callback/configuration
                 var callback = {
- 
                     timeout : 5000,
 
                     responseType: 'json',
  
                     on : {
+                        success : function (x,o) {
+                        
+                        },
+                        failure : function (x,o) {
+                            target.setContent("Async call failed!");
+                            handle[handle_i].cancel();
+                            return;
+                        }
+                    },
+                    
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                };
+                
+                Y.io(location.protocol + '//' + location.host + '/question/type/cloud/getipaddress.php?url=' + base_url + server_info['id'] + 'sdf' + '&command_type=GET&extra_headers[]=X-Auth-Token:' + auth_token, callback);
+            }
+        });
+        
+        var handle = new Array();
+        servers.forEach(function(server, index) {
+            handle.push(Y.later(3000, window, YUI.global.get_ip_address, [Y, index, server], true));
+        });
+    }
+};
+
+
+           
+/*
                         success : function (x,o) {
                             var info = [],
                                 html = '', i;
@@ -94,27 +129,6 @@ M.qtype_cloud = {
                                loopCount = 0;
                            }
 
-                      },
- 
-                        failure : function (x,o) {
-                            target.setContent("Async call failed!");
-                            handle.cancel();
-                            return;
-                        }
- 
-                    },
+                        },
 
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                };              
-
-              Y.io(location.protocol + '//' + location.host + '/question/type/cloud/getipaddress.php?url=' + params["url"] + '&command_type=GET&extra_headers[]=X-Auth-Token:' + params["auth_token"], callback);
-           }
-       });
-
-        var handle = Y.later(3000, window, YUI.global.get_ip_address, [Y, params], true);
-    }
-};
+*/
