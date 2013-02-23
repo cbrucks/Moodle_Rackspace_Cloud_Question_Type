@@ -76,6 +76,9 @@ class qtype_cloud_renderer extends qtype_renderer {
         // and to update the services.
         $response = $this->authorize($question);
 
+//        echo $OUTPUT->notification(var_dump($response));
+//        echo $OUTPUT->notification(var_dump($question));
+
         $display_text = '';
         if (!empty($response->unauthorized)) { // Unauthorized username and password
             return '<center><font color="red">Failed to authorize based on given credentials.  Contact question administrator.<br />Code: ' . $response->unauthorized->code . '<br />' . $response->unauthorized->message . '</font></center>';
@@ -141,25 +144,26 @@ class qtype_cloud_renderer extends qtype_renderer {
         }
 
         // Build Servers
-        $server_info_array();
+        $server_info_array = array();
         foreach ($question->servers as $key=>$server) {
             $server_info = new stdClass();
-            
+
             // Verify Server Image Name
             $server_image_id = NULL;
-            $image_name = $server->imagename;
+            $image_name = $question->servers[$key]->imagename;
             foreach ($list->server_images->images as $image) {
                 if ($image->name === $image_name) {
                     $server_image_id = $image->id;
                     break;
                 }
             }
+
             if (empty($server_image_id)) {
                 return '<center><font color="red">Could not find server image name "'. $image_name .'" in list retreived from server</font></center>';
             }
 
             // Get Server Flavor
-            $server_flavor_id = $server->slicesize + 2;
+            $server_flavor_id = $question->servers[$key]->slicesize + 2;
 
             // Get Attempt ID
             $user_id = $USER->id;
@@ -169,10 +173,10 @@ class qtype_cloud_renderer extends qtype_renderer {
 
             // Build server name.
             $server_name = array();
-            $server_name[] = preg_replace('~\s+~', '_', trim($server->srv_name)) . '.';
+            $server_name[] = preg_replace('~\s+~', '_', trim($question->servers[$key]->srv_name)) . '.';
             $server_name[] = '';  // $USER->username
             $server_name[] = $question->id . '_';
-            $server_name[] = $server->num . '_';
+            $server_name[] = $question->servers[$key]->num . '_';
             $server_name[] = $attempt_id;
 
             $server_name[1] = substr(preg_replace('~\s+~', '_', trim($USER->username)), 0, 128-strlen(implode('_', $server_name))) . '_';
@@ -185,35 +189,29 @@ class qtype_cloud_renderer extends qtype_renderer {
             // See if server name already exists and rebuild it if it does.
             // If more than one exist then delete the extras.
             $found_existing_server = FALSE;
-            $existing_servers = $list->servers->servers;
-            $extra_servers = array();
-            foreach ($existing_servers as $existing_server) {
-                if ($existing_server->name === $server_name && !$found_existing_server) {
+            foreach ($list->servers->servers as $existing_server) {
+                if ($existing_server->name === $server_name) {
                     // check to see if it is the right size and image.  if not rebuild it.
-                    if ($existing_server->flavor->id === $server_flavor_id && $existing_server->image->id === $server_image_id) {
+                    if (!$found_existing_server && $existing_server->image->id == $server_image_id && $existing_server->flavor->id == $server_flavor_id) {
                         $found_existing_server = TRUE;
-                        
-                        $server_info->state = 'reuse';
+
+                        $server_info->status = 'reuse';
                         $server_info->username = 'admin';
                         // Cannot recover password so reset the admin password
                         $server_info->password = uniqid();
                         $server_info->id = $existing_server->id;
                         $server_info->class = 'server_ip_' . ($key+1);
-                        $server_info->ip = '<span class="' . $server_info->class . '">(Building Server. Please wait...)</span>';
+                        $server_info->ip = '<span class="' . $server_info->class . '">(Starting up Javascript...)</span>';
 
                     } else {
-                        // Make a list of servers to delete
-                        $extra_servers[] = $existing_server;
+                        // Double up on the sanity check before destroying an instance
+                        if ($existing_server->name === $server_name) {
+                            // Delete the server
+                            // TODO: do authorization token check if it fails
+                            $this->delete_server($question, $server_endpoint_url, $ac_auth_token, $existing_server->id);
+//                            echo $OUTPUT->notification('Delete Server');
+                        }
                     }
-                }
-            }
-            
-            // Delte any extra server with the same name
-            foreach ($extra_servers as $extra_server) {
-                //double up the checks
-                if ($extra_server->name === $server_name) {
-                    echo $OUTPUT->notification($extra_server->name);
-                    //$this->delete_server($question, $server_endpoint_url, $ac_auth_token, $extra_server->id);
                 }
             }
 
@@ -241,14 +239,15 @@ class qtype_cloud_renderer extends qtype_renderer {
                 }
 
                 // Store server info
-                $server_info->state = 'new';
+                $server_info->status = 'new';
                 $server_info->username = 'root (Linux) / admin (Windows)';
                 $server_info->password = $server_response->server->adminPass;
                 $server_info->id = $server_response->server->id;
                 $server_info->class = 'server_ip_' . ($key+1);
-                $server_info->ip = '<span class="' . $server_info->class . '">(Building Server. Please wait...)</span>';
+                $server_info->ip = '<span class="' . $server_info->class . '">(Starting up Javascript...)</span>';
 
             }
+
 
             // print out server info
             $display_text .= '<div style="margin:0 auto 0 auto;">' .
@@ -257,17 +256,20 @@ class qtype_cloud_renderer extends qtype_renderer {
                     'Username: ' . $server_info->username . '<br />' .
                     'Password: ' . $server_info->password . '</div><br />';
 
-            // add the server info to the array being sent to the javscript so it can be monitored
+
             $server_info_array[] = $server_info;
+
         }
-        
+
         // if we have to wait for the server to be created then start the javascript that will update the fields
         $PAGE->requires->js_init_call('M.qtype_cloud.init', array(array(
-                 'url' => $server_endpoint_url . '/servers/',
+                 'base_url' => $server_endpoint_url . '/servers/',
                  'auth_token' => $ac_auth_token,
-                 'servers' => array($server_info_array),
+                 'servers' => $server_info_array,
                  )), false, $this->jsmodule);
-                     
+
+
+
         // do the same thing for cloud load balancers
         // do the same thing for cloud databases
 
