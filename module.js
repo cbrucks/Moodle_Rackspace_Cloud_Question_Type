@@ -16,9 +16,9 @@ M.qtype_cloud = {
         var endCount = 0;
         var ipaddress = '';
         
-        YUI.add("uuu", function (Y) {
-            var functions = {
-                getServerInfo: function (Y, server_id) {
+        YUI.add("uuu", 'io-base', 'dump', 'querystring-stringify-simple', function (Y) {
+            var server = {
+                getInfo: function (Y, server_id) {
                     var callback = {
                         timeout : 5000,
 
@@ -58,81 +58,82 @@ M.qtype_cloud = {
                 }
             };
             
-            Y.server = functions;
-        });
-
-
-        YUI().use('uuu', 'io-base', 'dump', 'querystring-stringify-simple', function(Y) {
-            YUI.global.get_ip_address = function(Y, handle_i, server_info) {
+            Y.server = server;
+        
+            var main =  {
+                loop: function(Y, handle_i, server_info) {
                             
-                Y.JSON.useNativeParse = true;
-                
-                var target = Y.one('.' + server_info["class"]);
+                    Y.JSON.useNativeParse = true;
+                    
+                    var target = Y.one('.' + server_info["class"]);
 
-                if (target) {
-                
-                    info = Y.server.getServerInfo(Y, server_info['id']);
+                    if (target) {
+                    
+                        info = Y.server.getInfo(Y, server_info['id']);
 
-                    if (info === undefined) {
-                        target.setContent("Problem with settings sent to php script.");
-                        handle[handle_i].cancel();
-                    }
+                        if (info === undefined) {
+                            target.setContent("Problem with settings sent to php script.");
+                            handle[handle_i].cancel();
+                        }
 
-                    if (info.itemNotFound !== undefined && info.itemNotFound.message !== undefined) {
-                        target.setContent("Failed: " + info.itemNotFound.message + "    Code:" + info.itemNotFound.code);
-                        handle[handle_i].cancel();
-                    }
-                
-                    switch (info.server.status) {
+                        if (info.itemNotFound !== undefined && info.itemNotFound.message !== undefined) {
+                            target.setContent("Failed: " + info.itemNotFound.message + "    Code:" + info.itemNotFound.code);
+                            handle[handle_i].cancel();
+                        }
+                    
+                        switch (info.server.status) {
 
-                        case 'reuse':
-                            break;
-                        
-                        case 'new':
-                            break;
+                            case 'reuse':
+                                break;
+                            
+                            case 'new':
+                                break;
 
-                        case 'BUILD':
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-                            if (ipaddress.length === 0 && info.server !== undefined && info.server.addresses !== undefined && info.server.addresses.public !== undefined) {
-                                for (i=0; i<info.server.addresses.public.length; i++) {
-                                    if (info.server.addresses.public[i].version == 4) {
-                                        ipaddress = info.server.addresses.public[i].addr;
-                                        break;
+                            case 'BUILD':
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                if (ipaddress.length === 0 && info.server !== undefined && info.server.addresses !== undefined && info.server.addresses.public !== undefined) {
+                                    for (i=0; i<info.server.addresses.public.length; i++) {
+                                        if (info.server.addresses.public[i].version == 4) {
+                                            ipaddress = info.server.addresses.public[i].addr;
+                                            break;
+                                        }
                                     }
+
+                                    // replace all environment variables
+                                    body = Y.one(document.body);
+                                    var body_text = body.getContent();
+                                    body_text = body_text.split("[%=" + server_info["class"] + "%]").join(ipaddress);
+                                    body.setContent(body_text);
+
+                                    // reveal the question text with the IP environment variable replaced
+    //                                            Y.one(".qtext").setStyle('display', 'inline');
                                 }
+                                break;
+                                
+                            case 'PASSWORD':
+                                break;
 
-                                // replace all environment variables
-                                body = Y.one(document.body);
-                                var body_text = body.getContent();
-                                body_text = body_text.split("[%=" + server_info["class"] + "%]").join(ipaddress);
-                                body.setContent(body_text);
+                            case 'ACTIVE':
+                                // wait a few cycles to ensure that the process is done
+                                break;
 
-                                // reveal the question text with the IP environment variable replaced
-//                                            Y.one(".qtext").setStyle('display', 'inline');
-                            }
-                            break;
-                            
-                        case 'PASSWORD':
-                            break;
-
-                        case 'ACTIVE':
-                            // wait a few cycles to ensure that the process is done
-                            break;
-
-                        default:
-                            break;
+                            default:
+                                break;
+                        }
+                    } else {
+                        target.setContent("Could Not Find the Server IP field for server number " + (handle_i+1));
+                        handle[handle_i].cancel();
+                        return;
                     }
-                } else {
-                    target.setContent("Could Not Find the Server IP field for server number " + (handle_i+1));
-                    handle[handle_i].cancel();
-                    return;
                 }
             };
+            
+            Y.main = main;
         });
         
         var handle = new Array();
         for (var i=0; i<servers.length; i++) {
-            handle.push(Y.later(3000, window, YUI.global.get_ip_address, [Y, i, servers[i]], true));
+            handle.push(Y.later(3000, window, YUI.main.loop, [Y, i, servers[i]], true));
         }
         
     }
