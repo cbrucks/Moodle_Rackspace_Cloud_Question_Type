@@ -15,10 +15,19 @@ M.qtype_cloud = {
         var loopCount = 0;
         var endCount = 0;
         var ipaddress = '';
+        
+        YUI.add("uuu", function (Y) {
+            var funcs = {
+                doSomething: function () { window.alert("Done."); }
+            };
+            Y.theObject = funcs;
+        });
 
 
         YUI().use('io-base', 'dump', 'querystring-stringify-simple', function(Y) {
             YUI.global.get_ip_address = function(Y, handle_i, server_info) {
+            
+                Y.theObject.doSomething();
 
                 Y.JSON.useNativeParse = true;
                 
@@ -125,10 +134,6 @@ M.qtype_cloud = {
         }
         
         print_whatever(Y, new Array());
-    }
-    
-    print_whatever: function (Y, params) {
-         Y.log("asdlkjkfjasjl");
     }
 };
 
