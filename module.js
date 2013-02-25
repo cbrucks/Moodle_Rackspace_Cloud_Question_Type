@@ -24,11 +24,9 @@ M.qtype_cloud = {
         });
 
 
-        YUI().use('io-base', 'dump', 'querystring-stringify-simple', function(Y) {
+        YUI().use('uuu', 'io-base', 'dump', 'querystring-stringify-simple', function(Y) {
             YUI.global.get_ip_address = function(Y, handle_i, server_info) {
-            
-                Y.theObject.doSomething();
-
+                            
                 Y.JSON.useNativeParse = true;
                 
                 var target = Y.one('.' + server_info["class"]);
@@ -133,7 +131,6 @@ M.qtype_cloud = {
             handle.push(Y.later(3000, window, YUI.global.get_ip_address, [Y, i, servers[i]], true));
         }
         
-        print_whatever(Y, new Array());
     }
 };
 
