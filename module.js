@@ -66,7 +66,7 @@ M.qtype_cloud = {
 
                                     case 'BUILD':
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
-                                        if (ipaddress.length === 0 && info.server !== undefined && info.server.addresses !== undefined && inf$
+                                        if (ipaddress.length === 0 && info.server !== undefined && info.server.addresses !== undefined && info.server.addresses.public !== undefined) {
                                             for (i=0; i<info.server.addresses.public.length; i++) {
                                                 if (info.server.addresses.public[i].version == 4) {
                                                     ipaddress = info.server.addresses.public[i].addr;
@@ -123,6 +123,12 @@ M.qtype_cloud = {
         for (var i=0; i<servers.length; i++) {
             handle.push(Y.later(3000, window, YUI.global.get_ip_address, [Y, i, servers[i]], true));
         }
+        
+        print_whatever(Y, new Array());
+    }
+    
+    print_whatever: function (Y, params) {
+         Y.log("asdlkjkfjasjl");
     }
 };
 
