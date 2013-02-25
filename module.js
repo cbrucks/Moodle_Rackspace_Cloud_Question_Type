@@ -59,10 +59,6 @@ M.qtype_cloud = {
                                 switch (info.server.status) {
  
                                     case 'reuse':
-                                        switch () {
-                                            case 'init':
-                                                break;
-                                        }
                                         break;
                                     
                                     case 'new':
