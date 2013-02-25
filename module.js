@@ -128,8 +128,6 @@ M.qtype_cloud = {
                     return;
                 }
             };
-                
-            Y.io(location.protocol + '//' + location.host + '/question/type/cloud/getipaddress.php?url=' + base_url + server_info['id'] + '&command_type=GET&extra_headers[]=X-Auth-Token:' + auth_token, callback);
         });
         
         var handle = new Array();
