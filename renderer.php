@@ -197,11 +197,13 @@ class qtype_cloud_renderer extends qtype_renderer {
 
                         $server_info->status = 'reuse';
                         $server_info->username = 'admin';
-                        // Cannot recover password so reset the admin password
                         $server_info->password = uniqid();
                         $server_info->id = $existing_server->id;
                         $server_info->class = 'server_ip_' . ($key+1);
                         $server_info->ip = '<span class="' . $server_info->class . '">(Starting up Javascript...)</span>';
+
+                        // Cannot recover password so reset the admin password
+                        $this->set_server_password($question, $server_endpoint_url, $ac_auth_token, $server_info->id, $server_info->password);
 
                     } else {
                         // Double up on the sanity check before destroying an instance
