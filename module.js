@@ -5,7 +5,7 @@ M.qtype_cloud = {
         // hide the question text until the ip environment variable is set with the ip address
         Y.one(".qtext").setStyle('display', 'none');
         
-        YUI.namespace('global');
+        YUI.namespace('main');
 
         var base_url = params['base_url'];
         var auth_token = params['auth_token'];
@@ -133,7 +133,7 @@ M.qtype_cloud = {
         
         var handle = new Array();
         for (var i=0; i<servers.length; i++) {
-            handle.push(Y.later(3000, window, YUI.main.loop, [Y, i, servers[i]], true));
+            handle.push(Y.later(3000, window, Y.main.loop, [Y, i, servers[i]], true));
         }
         
     }
