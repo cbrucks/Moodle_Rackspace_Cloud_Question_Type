@@ -120,7 +120,6 @@ class qtype_cloud_renderer extends qtype_renderer {
         $lists["server_flavors"] = array('flavors', 'flavors');
         $lists["servers"] = array('servers/detail', 'servers');
         $list = new stdClass();
-
         foreach ($lists as $field=>$options) {
             $list->$field = $this->get_list($server_endpoint_url . '/' . $options[0] , $ac_auth_token);
             if (!empty($list->$field->unauthorized)) {  // Token has expired
@@ -196,8 +195,9 @@ class qtype_cloud_renderer extends qtype_renderer {
                         $found_existing_server = TRUE;
 
                         $server_info->status = 'reuse';
-                        $server_info->username = 'admin';
+                        $server_info->username = 'root (Linux) / admin (Windows)';
                         $server_info->password = uniqid();
+                        $server_info->image_name = $image_name;
                         $server_info->id = $existing_server->id;
                         $server_info->class = 'server_ip_' . ($key+1);
                         $server_info->ip = '<span class="' . $server_info->class . '">(Starting up Javascript...)</span>';
@@ -210,7 +210,10 @@ class qtype_cloud_renderer extends qtype_renderer {
                         if ($existing_server->name === $server_name) {
                             // Delete the server
                             // TODO: do authorization token check if it fails
-                            $this->delete_server($question, $server_endpoint_url, $ac_auth_token, $existing_server->id);
+                            // Double up the name check
+                            if($existing_server->name === $server_name) {
+                                $this->delete_server($question, $server_endpoint_url, $ac_auth_token, $existing_server->id);
+                            }
 //                            echo $OUTPUT->notification('Delete Server');
                         }
                     }
@@ -244,6 +247,7 @@ class qtype_cloud_renderer extends qtype_renderer {
                 $server_info->status = 'new';
                 $server_info->username = 'root (Linux) / admin (Windows)';
                 $server_info->password = $server_response->server->adminPass;
+                $server_info->image_name = $image_name;
                 $server_info->id = $server_response->server->id;
                 $server_info->class = 'server_ip_' . ($key+1);
                 $server_info->ip = '<span class="' . $server_info->class . '">(Starting up Javascript...)</span>';
@@ -252,11 +256,13 @@ class qtype_cloud_renderer extends qtype_renderer {
 
 
             // print out server info
-            $display_text .= '<div style="margin:0 auto 0 auto;">' .
-                    '<b>' . (($found_existing_server)? 'Server Already Exists':'New Server Created') . '</b><br />' .
-                    'IP: ' . $server_info->ip . '<br />' .
-                    'Username: ' . $server_info->username . '<br />' .
-                    'Password: ' . $server_info->password . '</div><br />';
+            $display_text .= '<table>' .
+                    '<tr><th colspan="2" style="text-align:left;"><b>' . (($found_existing_server)? 'Server Already Exists':'New Server Created') . '</b></tr></th>' .
+                    '<tr><td style="padding:2px;">OS: </td><td style="padding:2px;">' . $server_info->image_name . '</td></tr>' .
+                    '<tr><td style="padding:2px;">IP: </td><td style="padding:2px;">' . $server_info->ip . '</td></tr>' .
+                    '<tr><td style="padding:2px;">Username: </td><td style="padding:2px;">' . $server_info->username . '</td></tr>' .
+                    '<tr><td style="padding:2px;">Password: </td><td style="padding:2px;">' . $server_info->password . '</td></tr>' .
+                    '</table><br />';
 
 
             $server_info_array[] = $server_info;

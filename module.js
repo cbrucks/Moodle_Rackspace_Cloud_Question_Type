@@ -39,9 +39,7 @@ M.qtype_cloud = {
             YUI.global.get_ip_address = function(Y, handle_i, server_info) {
                 Y.JSON.useNativeParse = true;
 
-                var target = Y.one('.' + server_info["class"]);
-                var ipaddress = '';
-
+                target[handle_i] = Y.one('.' + server_info["class"]);
            
                 // Create the io callback/configuration
                 var callback = {
@@ -61,31 +59,31 @@ M.qtype_cloud = {
                                info = Y.JSON.parse(o.responseText);
                            }
                            catch (e) {
-                               target.setContent("JSON Parse failed!");
+                               target[handle_i].setContent("JSON Parse failed!");
                                handle[handle_i].cancel();
                                handle[handle_i] = null;
                                return;
                            }
 
                             if (info === undefined) {
-                                target.setContent("Problem with settings sent to php script.");
+                                target[handle_i].setContent("Problem with settings sent to php script.");
                                 handle[handle_i].cancel();
                                 handle[handle_i] = null;
                                 return;
                             }
  
                             if (info.itemNotFound !== undefined && info.itemNotFound.message !== undefined) {
-                                target.setContent("Failed: " + info.itemNotFound.message + "    Code:" + info.itemNotFound.code);
+                                target[handle_i].setContent("Failed: " + info.itemNotFound.message + "    Code:" + info.itemNotFound.code);
                                 handle[handle_i].cancel();
                                 handle[handle_i] = null;
                                 return;
                             }
                            
                            
-                           if (ipaddress.length === 0 && info.server !== undefined && info.server.addresses !== undefined && info.server.addresses.public !== undefined) {
+                           if (ipaddress[handle_i].length === 0 && info.server !== undefined && info.server.addresses !== undefined && info.server.addresses.public !== undefined) {
                                for (i=0; i<info.server.addresses.public.length; i++) {
                                    if (info.server.addresses.public[i].version == 4) {
-                                       ipaddress = info.server.addresses.public[i].addr;
+                                       ipaddress[handle_i] = info.server.addresses.public[i].addr;
                                        break;
                                    }
                                }
@@ -93,19 +91,26 @@ M.qtype_cloud = {
                               // replace all environment variables
                               var body = Y.one(document.body);
                               var body_text = body.getContent();
-                              body_text = body_text.split("[%=" + server_info["class"] + "%]").join(ipaddress);
+                              body_text = body_text.split("[%=" + server_info["class"] + "%]").join(ipaddress[handle_i]);
                               body.setContent(body_text);
 
                               // reveal the question text with the IP environment variable replaced
                               
-                              Y.one(".qtext").setStyle('display', 'inline');
+                              for (i=0; i<ipaddress.length; i++) {
+                                  if (ipaddress[i].length === 0) {
+                                      break;
+                                  } else
+                                  if (i === ipaddress.length-1) {
+                                      Y.one(".qtext").setStyle('display', 'inline');
+                                  }
+                              }
                            }
 
                            // Do this check a few times before continuing.  (weird bug fix)
                            if (endCount < 3) {
                                endCount++;
                            } else
-                           if (ipaddress.length !==0 && info.server!== undefined && info.server.status !== undefined && info.server.status === "ACTIVE") {
+                           if (ipaddress[handle_i].length !==0 && info.server!== undefined && info.server.status !== undefined && info.server.status === "ACTIVE") {
                               // If this is a reused server reset the password
                               if (server_info["status"] === 'reuse') {
                                   YUI.global.resetPassword(Y, server_info["id"], server_info["password"]);
@@ -115,8 +120,7 @@ M.qtype_cloud = {
                               }
 
                               // Use the Node API to apply the new innerHTML to the target
-                              target.setContent(ipaddress);
-                                              Y.log(target);
+                              target[handle_i].setContent(ipaddress[handle_i]);
 
 
                               handle[handle_i].cancel();
@@ -124,11 +128,11 @@ M.qtype_cloud = {
                               return;
                            }
 
-                           var output = ((ipaddress.length === 0)? "(Building Server. " : ipaddress + " (Configuring Server. " ) + "Please wait";
+                           var output = ((ipaddress[handle_i].length === 0)? "(Building Server. " : ipaddress[handle_i] + " (Configuring Server. " ) + "Please wait";
                            for (i=0; i<loopCount; i++) {
                                output += '.';
                            }
-                           target.setContent(output + ")");
+                           target[handle_i].setContent(output + ")");
                            if (loopCount < 3) {
                                loopCount++;
                            } else {
@@ -138,7 +142,7 @@ M.qtype_cloud = {
                       },
  
                         failure : function (x,o) {
-                            target.setContent("Async call failed!");
+                            target[handle_i].setContent("Async call failed!");
                             handle[handle_i].cancel();
                             handle[handle_i] = null;
                             return;
@@ -157,8 +161,12 @@ M.qtype_cloud = {
            }
        });
 
+        var target = new Array();
+        var ipaddress = new Array();
         var handle = new Array();
         for (var i=0; i<servers.length; i++) {
+            ipaddress.push('');
+            target.push(null);
             handle.push(Y.later(3000, window, YUI.global.get_ip_address, [Y, i, servers[i]], true));
         }
     }
