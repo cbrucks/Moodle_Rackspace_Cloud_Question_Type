@@ -203,7 +203,7 @@ class qtype_cloud_renderer extends qtype_renderer {
                         $server_info->ip = '<span class="' . $server_info->class . '">(Starting up Javascript...)</span>';
 
                         // Cannot recover password so reset the admin password
-                        $this->set_server_password($question, $server_endpoint_url, $ac_auth_token, $server_info->id, $server_info->password);
+//                        $this->set_server_password($question, $server_endpoint_url, $ac_auth_token, $server_info->id, $server_info->password);
 
                     } else {
                         // Double up on the sanity check before destroying an instance

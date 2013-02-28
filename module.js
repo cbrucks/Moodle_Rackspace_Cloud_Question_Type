@@ -4,22 +4,44 @@ M.qtype_cloud = {
 
         YUI.namespace('global');
 
+
         var loopCount = 0;
         var endCount = 0;
-        var ipaddress = '';
         var base_url = params['base_url'];
         var auth_token = params['auth_token'];
         var servers = params['servers'];
+
 
         // hide the question text until the ip environment variable is set with the ip address
         Y.one(".qtext").setStyle('display', 'none');
 
         YUI().use('io-base', 'dump', 'querystring-stringify-simple', function(Y) {
-            YUI.global.get_ip_address = function(Y, handle_i, server_info) {
+            YUI.global.resetPassword = function(Y, server_id, new_password) {
+                var callback = {
+                    on : {
+                        success : function (x,o) {
+                        },
+                        
+                        failure : function (x,o) {
+                        },
+                    },
+                    
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                };
+                
+                Y.io(location.protocol + '//' + location.host + '/question/type/cloud/makeAPIcall.php?url=' + base_url + server_id + '/action&command_type=POST&extra_headers[]=X-Auth-Token:' + auth_token + '&json_string={"changePassword":{"adminPass":"' + new_password + '"}}', callback);
+            }
 
+            YUI.global.get_ip_address = function(Y, handle_i, server_info) {
                 Y.JSON.useNativeParse = true;
 
                 var target = Y.one('.' + server_info["class"]);
+                var ipaddress = '';
+
            
                 // Create the io callback/configuration
                 var callback = {
@@ -30,8 +52,7 @@ M.qtype_cloud = {
  
                     on : {
                         success : function (x,o) {
-                            var info = [],
-                                html = '', i;
+                            var info = [], i;
                                 
                            Y.log("RAW JSON DATA: " + o.responseText);
  
@@ -70,7 +91,7 @@ M.qtype_cloud = {
                                }
 
                               // replace all environment variables
-                              body = Y.one(document.body);
+                              var body = Y.one(document.body);
                               var body_text = body.getContent();
                               body_text = body_text.split("[%=" + server_info["class"] + "%]").join(ipaddress);
                               body.setContent(body_text);
@@ -85,8 +106,18 @@ M.qtype_cloud = {
                                endCount++;
                            } else
                            if (ipaddress.length !==0 && info.server!== undefined && info.server.status !== undefined && info.server.status === "ACTIVE") {
+                              // If this is a reused server reset the password
+                              if (server_info["status"] === 'reuse') {
+                                  YUI.global.resetPassword(Y, server_info["id"], server_info["password"]);
+                                  server_info["status"] = 'done';
+                                  endCount = 0;
+                                  return;
+                              }
+
                               // Use the Node API to apply the new innerHTML to the target
                               target.setContent(ipaddress);
+                                              Y.log(target);
+
 
                               handle[handle_i].cancel();
                               handle[handle_i] = null;
@@ -122,7 +153,7 @@ M.qtype_cloud = {
                     },
                 };              
                 
-                Y.io(location.protocol + '//' + location.host + '/question/type/cloud/getipaddress.php?url=' + base_url + server_info['id'] + '&command_type=GET&extra_headers[]=X-Auth-Token:' + auth_token, callback);
+                Y.io(location.protocol + '//' + location.host + '/question/type/cloud/makeAPIcall.php?url=' + base_url + server_info['id'] + '&command_type=GET&extra_headers[]=X-Auth-Token:' + auth_token, callback);
            }
        });
 
