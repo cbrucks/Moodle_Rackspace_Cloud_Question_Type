@@ -26,8 +26,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'qtype_cloud';
-$plugin->version   = 2013021400;
+$plugin->version   = 2013022801;
 
 $plugin->requires  = 2012120301.05;
 
 $plugin->maturity  = MATURITY_STABLE;
+
+$plugin->cron = 10;
