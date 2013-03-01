@@ -97,37 +97,40 @@ function qtype_cloud_cron() {
 
                         // Ensure the information pulled from the name is of the correct format
                         if (is_numeric($server_num) && is_numeric($server_q_attempt) && is_numeric($server_q_id) && strlen($user_name) > 0) {
-                            if (!in_array($server_q_attempt, $attempts)) {
-                                // Old question attempt
-                                mtrace('  DELETE: old attempt.      server : ' . $server->name);
-                                delete_server($auth_res, $server_end, $server);
-                            } elseif ($user = $DB->get_record('user', array('username'=>$user_name), 'id')) {
-                                // User exists
-                                $enroled = FALSE;
-                                foreach ($enrol_ids as $enrol_id) {
-                                    if ($DB->count_records('user_enrolments', array('userid'=>$user->id, 'enrolid'=>$enrol_id))) {
-                                        // User is enrolled in the course
-                                        $enroled = TRUE;
-                                        break;
+                            // Make sure the question ids match
+                            if ($server_q_id === $q->id) {
+                                if (!in_array($server_q_attempt, $attempts)) {
+                                    // Old question attempt
+                                    mtrace('  DELETE: old attempt.      server : ' . $server->name);
+                                    delete_server($auth_res, $server_end, $server);
+                                } elseif ($user = $DB->get_record('user', array('username'=>$user_name), 'id')) {
+                                    // User exists
+                                    $enroled = FALSE;
+                                    foreach ($enrol_ids as $enrol_id) {
+                                        if ($DB->count_records('user_enrolments', array('userid'=>$user->id, 'enrolid'=>$enrol_id))) {
+                                            // User is enrolled in the course
+                                            $enroled = TRUE;
+                                            break;
+                                        }
                                     }
-                                }
-                                if ($enroled) {
-                                    // User is enrolled in the course
+                                    if ($enroled) {
+                                        // User is enrolled in the course
 
-                                    if ($server_num > count($q_server_info)) {
-                                        // Server is an extra server
-                                        mtrace('  DELETE: extra server.     server : ' . $server->name);
+                                        if ($server_num > count($q_server_info)) {
+                                            // Server is an extra server
+                                            mtrace('  DELETE: extra server.     server : ' . $server->name);
+                                            delete_server($auth_res, $server_end, $server);
+                                        }
+                                    } else {
+                                        // User is not enrolled in the course
+                                        mtrace('  DELETE: user unenrolled.  server : ' . $server->name);
                                         delete_server($auth_res, $server_end, $server);
                                     }
                                 } else {
-                                    // User is not enrolled in the course
-                                    mtrace('  DELETE: user unenrolled.  server : ' . $server->name);
+                                    // User doesn't exist
+                                    mtrace('  DELETE: user DNE.         server : ' . $server->name);
                                     delete_server($auth_res, $server_end, $server);
                                 }
-                            } else {
-                                // User doesn't exist
-                                mtrace('  DELETE: user DNE.         server : ' . $server->name);
-                                delete_server($auth_res, $server_end, $server);
                             }
                         }
                     }
@@ -167,6 +170,9 @@ function delete_server($auth_res, $endpoint, $server) {
     // From the api we know on a delete request there is nothing returned so use http response code to determine success
     $output = '';
     switch ($result) {
+        case 204:
+            break;
+
         case 400:
             $output = '    !!! DELETE FAILED : BAD REQUEST !!!';
             break;
@@ -203,7 +209,9 @@ function delete_server($auth_res, $endpoint, $server) {
             $output = '    !!! DELETE FAILED : UNKOWN ERROR !!!';
             break;
     }
-    mtrace($output);
+    if (!empty($output) {
+        mtrace($output);
+    }
 
     return '';
 }
