@@ -6,19 +6,40 @@ function qtype_cloud_cron() {
     // User Preferences
     $max_server_lifetime = 6; // in hours
 
-    // Get a list of servers
-    $servers = get_servers();
-
     $questions = $DB->get_records('question', array('qtype'=>'cloud'), 'id', 'id');
     mtrace('Found ' . count($questions) . ' cloud question instance(s).');
 
-    $question_ids = array();
     foreach ($questions as $key=>$q) {
-        $question_ids[] = $q->id;
+        mtrace('(I' . $key . ' id:' . $q->id . ')');
+
+        if (! $account = $DB->get_record('question_cloud_account', array('questionid'=>$q->id), 'username,password')) {
+            mtrace('  Failed to retrieve account info from table question_cloud_account');
+            continue;
+        }
+
+        // Get API Authorization
+        $auth_res = authorize($account);
+        if (!empty($auth_res->unauthorized)) {
+            mtrace('  Failed to authorize the account.');
+            continue;
+        } elseif (empty($auth_res->access->token->id)) {
+            mtrace('  Failed to retrieve useful information.');
+            continue;
+        }
+
+        // Get Server Endpoint
+        $server_end = get_server_endpoint($auth_res);
+        if (empty($server_end)) {
+            mtrace(' TODO: server enpoint url empty.');
+            continue;
+        }
+
+        // Get a list of servers
+        $servers = get_servers($auth_res, $server_end);
+mtrace(var_dump($servers));
 
         $q_server_info = $DB->get_records('question_cloud_server', null, 'questionid,num');
 
-        mtrace('(I' . $key . ' id:' . $q->id . ')');
         $attempts = $DB->get_records('question_attempts', array('questionid'=>$q->id), null, 'id');
         mtrace('  ' . count($attempts) . ' current attempt(s).');
 
@@ -37,19 +58,66 @@ function qtype_cloud_cron() {
     }
 
     // Check if servers are for current question instances
-    
-}
-
-function get_servers() {
 
 }
 
-function authorize ($question) {
+function get_server_endpoint($auth_res) {
+    return get_endpoint($auth_res, 'cloudServersOpenStack');
+}
+
+function get_endpoint($auth_res, $service_name) {
+    foreach ($auth_res->access->serviceCatalog as $service) {
+        if ($service->name === $service_name) {
+            foreach ($service->endpoints as $endpoint) {
+                if ($endpoint->region === "DFW") {
+                    return $endpoint->publicURL;
+                }
+            }
+        }
+    }
+}
+
+function get_servers ($auth_res , $endpoint) {
+    $res = get_list($auth_res, $endpoint . '/servers');
+    if (!empty($res->unauthorized)) {
+        // re-get API Authorization
+        $a_res = authorize($account);
+        $auth_res->access = $a_res->access;
+
+        $res = get_list($auth_res, $endpoint . '/servers');
+        if (empty($res->servers)) {
+            mtrace('  Could not reauthorize the account.');
+            return;
+        }
+    } elseif (empty($res->servers)) {
+        mtrace('  Failed to retrieve useful information.');
+        return;
+    }
+
+    return $res->servers;
+}
+
+function get_list($auth_res, $endpoint) {
+    $token = $auth_res->access->token->id;
+
+    // Initialise extra header entries.
+    $headers = array(
+        sprintf('X-Auth-Token: %s' , $token),
+        );
+
+    // Parse the returned json string
+    $res = json_decode(send_json_curl_request($endpoint, 'GET', '', $headers));
+
+
+    return $res;
+}
+
+function authorize ($account) {
     global $OUTPUT;
 
     // Initialise the account authorization token variables.
-    $ac_username = $question->username;
-    $ac_password = $question->password;
+    $ac_username = $account->username . 'ad';
+    $ac_password = $account->password;
 
     $json_string = sprintf('{"auth":{"passwordCredentials":{"username":"%s", "password":"%s"}}}', $ac_username, $ac_password);
 
@@ -80,5 +148,3 @@ function send_json_curl_request ($url, $command_type = 'GET', $json_string = '',
     // Parse the returned json string
     return $curl_result;
 }
-
-
