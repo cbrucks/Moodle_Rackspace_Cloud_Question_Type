@@ -9,6 +9,7 @@ function qtype_cloud_cron() {
     $questions = $DB->get_records('question', array('qtype'=>'cloud'), 'id', 'id');
     mtrace('Found ' . count($questions) . ' cloud question instance(s).');
 
+    // Delete all unused servers for each existing question instance
     foreach ($questions as $key=>$q) {
         mtrace('(I' . $key . ' id:' . $q->id . ')');
 
@@ -38,26 +39,45 @@ function qtype_cloud_cron() {
         // Get a list of existing servers
         $servers = get_servers($auth_res, $server_end);
 
-        $q_server_info = $DB->get_records('question_cloud_server', null, 'questionid,num');
+        // Get Server Info from database
+        if (! $q_server_info = $DB->get_records('question_cloud_server', array('questionid'=>$q->id), null, 'num,srv_name')) {
+            mtrace('  Failed to retreive server information for the account.');
+            continue;
+        }
 
-        $attempts = $DB->get_records('question_attempts', array('questionid'=>$q->id), null, 'id');
-        mtrace('  ' . count($attempts) . ' current attempt(s).');
+        // Get attempts associated with this question
+        if (! $attempts = $DB->get_records('question_attempts', array('questionid'=>$q->id), null, 'questionusageid')) {
+            mtrace('  Failed to retreive question attempt information.');
+            continue;
+        }
+        $attempts = array_keys($attempts);
+        mtrace('  ' . count($attempts) . ' current attempt(s). (' . implode(', ', $attempts) . ')');
 
-        // Check if servers are for current attempt
+        foreach ($servers as $server) {
+            foreach ($q_server_info as $s_info) {
+                if (preg_match('/^' . $s_info->srv_name . '\./', $server->name)) {
+                    $server_name_temp = substr($server->name, strlen($s_info->srv_name) + 1);
+                    //$res = pregmatch('/^.+_(\d+)_(\d+)_(\d+)$/', $server_name_temp, $matches);
+//                        mtrace('Found a server with the name  ' . var_dump($matches));
+                    
+                }
+            }
+        }
 
 
-        foreach ($attempts as $attempt) {
-            $attempt_steps = $DB->get_records('question_attempt_steps', array('questionattemptid'=>$attempt->id), null, 'state,timecreated,userid');
+//        foreach ($attempts as $attempt) {
+//            $attempt_steps = $DB->get_records('question_attempt_steps', array('questionattemptid'=>$attempt->id), null, 'state,timecreated,userid');
 
             // Check if user is still enrolled in course
 
 
             // Check if user has had the servers associated with the attempt
             // for more than a specified amount of time.
-        }
+//        }
     }
 
-    // Check if servers are for current question instances
+    // Delete all servers that match the naming scheme but don't belong to any question instance
+    // might not do this if more than one moodle distro is on an account
 
 }
 
