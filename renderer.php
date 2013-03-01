@@ -25,6 +25,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+require_once($CFG->dirroot . '/question/type/cloud/lib.php');
 
 /**
  * Generates the output for cloud 'question's.
@@ -80,7 +81,7 @@ class qtype_cloud_renderer extends qtype_renderer {
 //        echo $OUTPUT->notification(var_dump($question));
 
         $display_text = '';
-        if (!empty($response->unauthorized)) { // Unauthorized username and password
+        if (!empty($response->authorized)) { // Unauthorized username and password
             return '<center><font color="red">Failed to authorize based on given credentials.  Contact question administrator.<br />Code: ' . $response->unauthorized->code . '<br />' . $response->unauthorized->message . '</font></center>';
 
         } elseif (empty($response->access->token->id)) { // All other unwanted instances
@@ -284,40 +285,6 @@ class qtype_cloud_renderer extends qtype_renderer {
         return $display_text;
     }
 
-    private function set_server_password($question, $server_endpoint_url, $ac_auth_token, $server_id, $new_password) {
-        $headers = array(
-            sprintf('X-Auth-Token: %s', $ac_auth_token),
-            );
-        $url = $server_endpoint_url . '/servers/' . $server_id . '/action';
-        $json_string = sprintf('{"changePassword":{"adminPass":"%s"}}', $new_password);
-
-        $this->send_json_curl_request($url, 'POST', $json_string, $headers);
-    }
-
-    private function delete_server($question, $server_endpoint_url, $ac_auth_token, $server_id){
-        // Initialise extra header entries.
-        $headers = array(
-            sprintf('X-Auth-Token: %s' , $ac_auth_token),
-            );
-
-        $url = $server_endpoint_url . '/servers/' . $server_id;
-
-        // Parse the returned json string
-        $this->send_json_curl_request($url, 'DELETE', '', $headers);
-
-        return '';
-    }
-
-    private function get_list ($url, $ac_auth_token) {
-        // Initialise extra header entries.
-        $headers = array(
-            sprintf('X-Auth-Token: %s' , $ac_auth_token),
-            );
-
-        // Parse the returned json string
-        return json_decode($this->send_json_curl_request($url, 'GET', '', $headers));
-    }
-
     private function save_auth_token ($question, $token) {
         global $DB;
         $error_text = '';
@@ -348,6 +315,40 @@ class qtype_cloud_renderer extends qtype_renderer {
 
     }
 
+    private function get_list ($url, $ac_auth_token) {
+        // Initialise extra header entries.
+        $headers = array(
+            sprintf('X-Auth-Token: %s' , $ac_auth_token),
+            );
+
+        // Parse the returned json string
+        return json_decode(send_json_curl_request($url, 'GET', '', $headers));
+    }
+
+    private function set_server_password($question, $server_endpoint_url, $ac_auth_token, $ser$
+        $headers = array(
+            sprintf('X-Auth-Token: %s', $ac_auth_token),
+            );
+        $url = $server_endpoint_url . '/servers/' . $server_id . '/action';
+        $json_string = sprintf('{"changePassword":{"adminPass":"%s"}}', $new_password);
+
+        send_json_curl_request($url, 'POST', $json_string, $headers);
+    }
+
+    private function delete_server($question, $server_endpoint_url, $ac_auth_token, $server_id$
+        // Initialise extra header entries.
+        $headers = array(
+            sprintf('X-Auth-Token: %s' , $ac_auth_token),
+            );
+
+        $url = $server_endpoint_url . '/servers/' . $server_id;
+
+        // Parse the returned json string
+        send_json_curl_request($url, 'DELETE', '', $headers);
+
+        return '';
+    }
+
     private function create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id) {
         // Initialise the account authorization token variables.
         $ac_username = $question->username;
@@ -367,7 +368,7 @@ class qtype_cloud_renderer extends qtype_renderer {
         $url = implode("/", $path);
 
         // Perform the cURL request
-        return json_decode($this->send_json_curl_request($url, 'POST', $json_string, $headers));
+        return json_decode(send_json_curl_request($url, 'POST', $json_string, $headers));
     }
 
     private function authorize ($question) {
@@ -382,10 +383,10 @@ class qtype_cloud_renderer extends qtype_renderer {
         $url = "https://identity.api.rackspacecloud.com/v2.0/tokens";
 
         // Perform the cURL request
-        return json_decode($this->send_json_curl_request($url, 'POST', $json_string));
+        return json_decode(send_json_curl_request($url, 'POST', $json_string));
     }
 
-    public function send_json_curl_request ($url, $command_type = 'GET', $json_string = '', $extra_headers = array()) {
+/*    public function send_json_curl_request ($url, $command_type = 'GET', $json_string = '', $extra_headers = array()) {
         // Build the header.
         $headers = array(
             'Content-Type: application/json',
@@ -405,7 +406,7 @@ class qtype_cloud_renderer extends qtype_renderer {
 
         // Parse the returned json string
         return $curl_result;
-    }
+    }*/
 
     public function formulation_heading () {
         return get_string('header', 'qtype_cloud');
