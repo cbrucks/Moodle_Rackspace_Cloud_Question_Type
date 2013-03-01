@@ -12,6 +12,7 @@ function qtype_cloud_cron() {
     foreach ($questions as $key=>$q) {
         mtrace('(I' . $key . ' id:' . $q->id . ')');
 
+        // Get Account Info for Question Instance
         if (! $account = $DB->get_record('question_cloud_account', array('questionid'=>$q->id), 'username,password')) {
             mtrace('  Failed to retrieve account info from table question_cloud_account');
             continue;
@@ -23,7 +24,7 @@ function qtype_cloud_cron() {
             mtrace('  Failed to authorize the account.');
             continue;
         } elseif (empty($auth_res->access->token->id)) {
-            mtrace('  Failed to retrieve useful information.');
+            mtrace('  Failed to retrieve useful information from auth request.');
             continue;
         }
 
@@ -34,9 +35,8 @@ function qtype_cloud_cron() {
             continue;
         }
 
-        // Get a list of servers
+        // Get a list of existing servers
         $servers = get_servers($auth_res, $server_end);
-mtrace(var_dump($servers));
 
         $q_server_info = $DB->get_records('question_cloud_server', null, 'questionid,num');
 
@@ -90,7 +90,7 @@ function get_servers ($auth_res , $endpoint) {
             return;
         }
     } elseif (empty($res->servers)) {
-        mtrace('  Failed to retrieve useful information.');
+        mtrace('  Failed to retrieve useful information with server list request.');
         return;
     }
 
@@ -116,7 +116,7 @@ function authorize ($account) {
     global $OUTPUT;
 
     // Initialise the account authorization token variables.
-    $ac_username = $account->username . 'ad';
+    $ac_username = $account->username;
     $ac_password = $account->password;
 
     $json_string = sprintf('{"auth":{"passwordCredentials":{"username":"%s", "password":"%s"}}}', $ac_username, $ac_password);
