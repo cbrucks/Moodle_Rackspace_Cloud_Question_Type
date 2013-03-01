@@ -13,6 +13,33 @@ function qtype_cloud_cron() {
     foreach ($questions as $key=>$q) {
         mtrace('(I' . $key . ' id:' . $q->id . ')');
 
+        // Get all courses containing this question
+        $course_ids = array();
+        if ($quizes = $DB->get_records('quiz', null, '', 'id,course,questions')){
+            foreach ($quizes as $quiz) {
+                $question_ids = explode(',', $quiz->questions);
+                if (in_array($q->id, $question_ids)) {
+                    $course_ids[] = $quiz->course;
+                }
+            }
+        } else {
+            mtrace('  Failed to find any courses.');
+            return;
+        }
+        $course_ids = array_unique($course_ids);
+        mtrace('  Found question in course(s): ' . implode(',', $course_ids));
+
+        // Get enrolment method ids for the containing courses
+        $enrol_ids = array();
+        foreach ($course_ids as $course_id) {
+            if ($enrolment_method_ids = $DB->get_records('enrol', array('courseid'=>$course_id), '', 'id')) {
+                $enrol_ids = array_merge($enrol_ids, array_keys($enrolment_method_ids));
+            } else {
+                mtrace('  Could not find enrolment methods for course id : ' . $course_id);
+            }
+        }
+        mtrace('  Enrolment method ids associated with this question: ' . implode(',', $enrol_ids));
+
         // Get Account Info for Question Instance
         if (! $account = $DB->get_record('question_cloud_account', array('questionid'=>$q->id), 'username,password')) {
             mtrace('  Failed to retrieve account info from table question_cloud_account');
@@ -55,11 +82,55 @@ function qtype_cloud_cron() {
 
         foreach ($servers as $server) {
             foreach ($q_server_info as $s_info) {
+                // Look for the question admin specified server name at the beginning of the name
                 if (preg_match('/^' . $s_info->srv_name . '\./', $server->name)) {
-                    $server_name_temp = substr($server->name, strlen($s_info->srv_name) + 1);
-                    //$res = pregmatch('/^.+_(\d+)_(\d+)_(\d+)$/', $server_name_temp, $matches);
-//                        mtrace('Found a server with the name  ' . var_dump($matches));
-                    
+                    $server_name = substr($server->name, strlen($s_info->srv_name) + 1); // remove the user specified name and period
+                    $server_name = explode('_', $server_name); // seperate the information
+                    $len = count($server_name); // get the length of the array
+
+                    // Ensure the rest of the name fits the overal schema
+                    if ($len >= 4) {
+                        $server_num = $server_name[$len-1]; // save the server number
+                        $server_q_attempt = $server_name[$len-2]; // save the server question attempt
+                        $server_q_id = $server_name[$len-3]; // save the server question id
+                        $user_name = implode('_', array_slice($server_name, 0, $len-3)); // put the username back together
+
+                        // Ensure the information pulled from the name is of the correct format
+                        if (is_numeric($server_num) && is_numeric($server_q_attempt) && is_numeric($server_q_id) && strlen($user_name) > 0) {
+                            if (!in_array($server_q_attempt, $attempts)) {
+                                // Old question attempt
+                                mtrace('  DELETE: old attempt.      server : ' . $server->name);
+                                delete_server($auth_res, $server_end, $server);
+                            } elseif ($user = $DB->get_record('user', array('username'=>$user_name), 'id')) {
+                                // User exists
+                                $enroled = FALSE;
+                                foreach ($enrol_ids as $enrol_id) {
+                                    if ($DB->count_records('user_enrolments', array('userid'=>$user->id, 'enrolid'=>$enrol_id))) {
+                                        // User is enrolled in the course
+                                        $enroled = TRUE;
+                                        break;
+                                    }
+                                }
+                                if ($enroled) {
+                                    // User is enrolled in the course
+
+                                    if ($server_num > count($q_server_info)) {
+                                        // Server is an extra server
+                                        mtrace('  DELETE: extra server.     server : ' . $server->name);
+                                        delete_server($auth_res, $server_end, $server);
+                                    }
+                                } else {
+                                    // User is not enrolled in the course
+                                    mtrace('  DELETE: user unenrolled.  server : ' . $server->name);
+                                    delete_server($auth_res, $server_end, $server);
+                                }
+                            } else {
+                                // User doesn't exist
+                                mtrace('  DELETE: user DNE.         server : ' . $server->name);
+                                delete_server($auth_res, $server_end, $server);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -76,9 +147,23 @@ function qtype_cloud_cron() {
 //        }
     }
 
-    // Delete all servers that match the naming scheme but don't belong to any question instance
-    // might not do this if more than one moodle distro is on an account
+    // any additional servers that match naming scheme but don't belong to any question instance
+    // should be taken care of during the question delete process
 
+}
+
+function delete_server($auth_res, $endpoint, $server) {
+    // Initialise extra header entries.
+    $headers = array(
+        sprintf('X-Auth-Token: %s' , $auth_res->token->id),
+        );
+
+    $url = $endpoint . '/servers/' . $server->id;
+
+    // Parse the returned json string
+    send_json_curl_request($url, 'DELETE', '', $headers);
+
+    return '';
 }
 
 function get_server_endpoint($auth_res) {
