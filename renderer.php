@@ -81,7 +81,7 @@ class qtype_cloud_renderer extends qtype_renderer {
 //        echo $OUTPUT->notification(var_dump($question));
 
         $display_text = '';
-        if (!empty($response->authorized)) { // Unauthorized username and password
+        if (!empty($response->unauthorized)) { // Unauthorized username and password
             return '<center><font color="red">Failed to authorize based on given credentials.  Contact question administrator.<br />Code: ' . $response->unauthorized->code . '<br />' . $response->unauthorized->message . '</font></center>';
 
         } elseif (empty($response->access->token->id)) { // All other unwanted instances
@@ -167,17 +167,18 @@ class qtype_cloud_renderer extends qtype_renderer {
 
             // Get Attempt ID
             $user_id = $USER->id;
-            $unique_id = $qa->get_database_id();
-            $attempt_id = $DB->get_field('quiz_attempts','id', array('uniqueid' => $unique_id, 'userid' => $user_id, 'state' => "inprogress"));
-            $OUTPUT->notification(strval($attempt_id));
+//            $attempt_id = $DB->get_field('quiz_attempts','id', array('quiz' => $quiz->id, 'userid' => $user_id, 'state' => "inprogress"));
+            $attempt_id = $qa->get_usage_id();
 
             // Build server name.
             $server_name = array();
             $server_name[] = preg_replace('~\s+~', '_', trim($question->servers[$key]->srv_name)) . '.';
             $server_name[] = '';  // $USER->username
+            $server_name[] = '';  // course id
+            $server_name[] = '';  // quiz id
             $server_name[] = $question->id . '_';
-            $server_name[] = $question->servers[$key]->num . '_';
-            $server_name[] = $attempt_id;
+            $server_name[] = $attempt_id . '_';
+            $server_name[] = $question->servers[$key]->num;
 
             $server_name[1] = substr(preg_replace('~\s+~', '_', trim($USER->username)), 0, 128-strlen(implode('_', $server_name))) . '_';
             $server_name = implode($server_name);
@@ -285,6 +286,40 @@ class qtype_cloud_renderer extends qtype_renderer {
         return $display_text;
     }
 
+    private function set_server_password($question, $server_endpoint_url, $ac_auth_token, $server_id, $new_password) {
+        $headers = array(
+            sprintf('X-Auth-Token: %s', $ac_auth_token),
+            );
+        $url = $server_endpoint_url . '/servers/' . $server_id . '/action';
+        $json_string = sprintf('{"changePassword":{"adminPass":"%s"}}', $new_password);
+
+        send_json_curl_request($url, 'POST', $json_string, $headers);
+    }
+
+    private function delete_server($question, $server_endpoint_url, $ac_auth_token, $server_id){
+        // Initialise extra header entries.
+        $headers = array(
+            sprintf('X-Auth-Token: %s' , $ac_auth_token),
+            );
+
+        $url = $server_endpoint_url . '/servers/' . $server_id;
+
+        // Parse the returned json string
+        send_json_curl_request($url, 'DELETE', '', $headers);
+
+        return '';
+    }
+
+    private function get_list ($url, $ac_auth_token) {
+        // Initialise extra header entries.
+        $headers = array(
+            sprintf('X-Auth-Token: %s' , $ac_auth_token),
+            );
+
+        // Parse the returned json string
+        return json_decode(send_json_curl_request($url, 'GET', '', $headers));
+    }
+
     private function save_auth_token ($question, $token) {
         global $DB;
         $error_text = '';
@@ -313,40 +348,6 @@ class qtype_cloud_renderer extends qtype_renderer {
             $DB->{$function}($table, $db_options);
         }
 
-    }
-
-    private function get_list ($url, $ac_auth_token) {
-        // Initialise extra header entries.
-        $headers = array(
-            sprintf('X-Auth-Token: %s' , $ac_auth_token),
-            );
-
-        // Parse the returned json string
-        return json_decode(send_json_curl_request($url, 'GET', '', $headers));
-    }
-
-    private function set_server_password($question, $server_endpoint_url, $ac_auth_token, $ser$
-        $headers = array(
-            sprintf('X-Auth-Token: %s', $ac_auth_token),
-            );
-        $url = $server_endpoint_url . '/servers/' . $server_id . '/action';
-        $json_string = sprintf('{"changePassword":{"adminPass":"%s"}}', $new_password);
-
-        send_json_curl_request($url, 'POST', $json_string, $headers);
-    }
-
-    private function delete_server($question, $server_endpoint_url, $ac_auth_token, $server_id$
-        // Initialise extra header entries.
-        $headers = array(
-            sprintf('X-Auth-Token: %s' , $ac_auth_token),
-            );
-
-        $url = $server_endpoint_url . '/servers/' . $server_id;
-
-        // Parse the returned json string
-        send_json_curl_request($url, 'DELETE', '', $headers);
-
-        return '';
     }
 
     private function create_server($question, $server_endpoint_url, $ac_auth_token, $server_name, $server_image_id, $server_flavor_id) {

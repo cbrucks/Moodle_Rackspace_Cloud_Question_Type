@@ -40,6 +40,24 @@ function qtype_cloud_cron() {
     
 }
 
+function get_servers() {
+
+}
+
+function authorize ($question) {
+    global $OUTPUT;
+
+    // Initialise the account authorization token variables.
+    $ac_username = $question->username;
+    $ac_password = $question->password;
+
+    $json_string = sprintf('{"auth":{"passwordCredentials":{"username":"%s", "password":"%s"}}}', $ac_username, $ac_password);
+
+    $url = "https://identity.api.rackspacecloud.com/v2.0/tokens";
+
+    // Perform the cURL request
+    return json_decode(send_json_curl_request($url, 'POST', $json_string));
+}
 
 function send_json_curl_request ($url, $command_type = 'GET', $json_string = '', $extra_headers = array()) {
     // Build the header.
