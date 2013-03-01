@@ -153,15 +153,57 @@ function qtype_cloud_cron() {
 }
 
 function delete_server($auth_res, $endpoint, $server) {
+//mtrace('auth: ' . var_dump($auth_res) . ' endpoint: ' . $endpoint . ' server: ' . var_dump($server));
+
     // Initialise extra header entries.
     $headers = array(
-        sprintf('X-Auth-Token: %s' , $auth_res->token->id),
+        sprintf('X-Auth-Token: %s' , $auth_res->access->token->id),
         );
 
     $url = $endpoint . '/servers/' . $server->id;
 
-    // Parse the returned json string
-    send_json_curl_request($url, 'DELETE', '', $headers);
+    $result = send_json_curl_request($url, 'DELETE', '', $headers);
+
+    // From the api we know on a delete request there is nothing returned so use http response code to determine success
+    $output = '';
+    switch ($result) {
+        case 400:
+            $output = '    !!! DELETE FAILED : BAD REQUEST !!!';
+            break;
+
+        case 401:
+            $output = '    !!! DELETE FAILED : UNAUTHORIZED !!!';
+            break;
+
+        case 403:
+            $output = '    !!! DELETE FAILED : FORBIDDEN !!!';
+            break;
+
+        case 404:
+            $output = '    !!! DELETE FAILED : ITEM NOT FOUND !!!';
+            break;
+
+        case 405:
+            $output = '    !!! DELETE FAILED : METHOD NOT ALLOWED !!!';
+            break;
+
+        case 409:
+            $output = '    !!! DELETE FAILED : BUILD IN PROGRESS !!!';
+            break;
+
+        case 413:
+            $output = '    !!! DELETE FAILED : OVER LIMIT !!!';
+            break;
+
+        case 503:
+            $output = '    !!! DELETE FAILED : SERVICE UNAVAILABLE !!!';
+            break;
+
+        default:
+            $output = '    !!! DELETE FAILED : UNKOWN ERROR !!!';
+            break;
+    }
+    mtrace($output);
 
     return '';
 }
@@ -248,8 +290,17 @@ function send_json_curl_request ($url, $command_type = 'GET', $json_string = '',
     curl_setopt($curl_ch, CURLOPT_HTTPHEADER, $headers);  // Set headers
     curl_setopt($curl_ch, CURLOPT_POSTFIELDS, $json_string);  // Set data
     $curl_result = curl_exec($curl_ch);
-    curl_close($curl_ch);
 
-    // Parse the returned json string
-    return $curl_result;
+    // Figure out what to return
+    $output = NULL;
+    if (curl_errno($curl_ch)) {
+        mtrace('Curl error: ' . curl_error($curl_ch));
+    } elseif (!empty($curl_result)) {
+        $output = $curl_result;
+    } else {
+        $output = curl_getinfo($curl_ch, CURLINFO_HTTP_CODE);
+    }
+
+    curl_close($curl_ch);
+    return $output;
 }
